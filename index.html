@@ -305,7 +305,7 @@ const basePower=d=>{let b=0;for(const t in d)b+=SHIP[t].power*d[t];return b};
 const countShips=d=>{let b=0;for(const t in d)b+=d[t];return b};
 const cellX=x=>clamp(Math.floor((x+HALF)/CELL),0,N-1),cellY=y=>clamp(Math.floor((y+HALF)/CELL),0,N-1);
 const planetAt=(cx,cy)=>(cx<0||cy<0||cx>=N||cy>=N)?null:planets[cy*N+cx];
-const ownerName=o=>o===0?(S.name||'Kommandant')+' (Du)':o>0?AIS[o-1].name+((S.elites&&S.elites[o])===2?' ★★':(S.elites&&S.elites[o])===1?' ★':''):'Unbesetzt';
+const ownerName=o=>o===0?(S.name||'Kommandant')+' (Du)':o>0?AIS[o-1].name+((S.elites&&S.elites[o])===2?' ★★':(S.elites&&S.elites[o])===1?' ★':(S.meds&&S.meds[o])?' ◆':''):'Unbesetzt';
 const ownerColor=o=>o===0?'#22d3ee':o>0?'#ef4444':'#64748b';
 
 /* ===== WELT ===== */
@@ -314,8 +314,12 @@ function generateWorld(){
  for(let cy=0;cy<N;cy++)for(let cx=0;cx<N;cx++){const id=cy*N+cx;
   planets[id]={id,x:Math.round(-HALF+(cx+.5)*CELL+(rng()-.5)*1500),y:Math.round(-HALF+(cy+.5)*CELL+(rng()-.5)*1500),r:12+rng()*14,biome:Math.floor(rng()*6),rich:.7+rng()*.8,
    name:`${PRE[Math.floor(rng()*PRE.length)]} ${SUF[Math.floor(rng()*SUF.length)]} #${id+1}`,owner:-1,garrison:{},b:{mine:0,power:0,turret:0,lab:0,hub:0,yard:0},dirty:false}}
- const homes=new Set();while(homes.size<399)homes.add(Math.floor(rng()*N*N));
- const homeArr=[...homes];
+ let homes=new Set(),homeArr=[];
+ {let sh=null,legacy=false;try{const raw=localStorage.getItem(KEY);if(raw){const d0=JSON.parse(raw);if(d0&&d0.v===5&&d0.S){if(Array.isArray(d0.S.homes)&&d0.S.homes.length)sh=d0.S.homes;else legacy=true}}}catch(e){}
+  if(sh)homeArr=sh.slice();
+  else if(legacy){while(homes.size<399)homes.add(Math.floor(rng()*N*N));homeArr=[...homes]}
+  else{const NB=520+Math.floor(Math.random()*61);let tr=0;while(homeArr.length<NB&&tr<80000){tr++;const cx=Math.floor(Math.random()*N),cy=Math.floor(Math.random()*N),lim=tr<40000?3:2;let ok=true;for(const h of homeArr){if(Math.max(Math.abs(h%N-cx),Math.abs(Math.floor(h/N)-cy))<lim){ok=false;break}}if(ok)homeArr.push(cy*N+cx)}}
+  homes=new Set(homeArr);S.homes=homeArr}
  let ph=null,bestD=-1;
  for(let t=0;t<800;t++){const p=planets[cellY(rng()*HALF-HALF/2)*N+cellX(rng()*HALF-HALF/2)];let md=1e9;for(const h of homeArr){const q=planets[h];md=Math.min(md,Math.hypot(p.x-q.x,p.y-q.y))}
   if(md>bestD){bestD=md;ph=p}if(md>=12000)break}
@@ -326,8 +330,8 @@ function generateWorld(){
    if(md>bd2){bd2=md;bp=p}if(md>=12000)break}
    if(bp)ph=bp}}
  S.capital=ph.id;
- homeArr.forEach((hid,i)=>{const nm=i<10?AI0[i]:`${ADJ[i%ADJ.length]} ${NOUN[Math.floor(i/ADJ.length)%NOUN.length]}${i>=204?' II':''}`;
-  AIS.push({id:i+1,name:nm,hue:Math.round((i*137.5)%360),col:`hsl(${Math.round((i*137.5)%360)},70%,58%)`,tech:0,aggr:1.25+rng()*.55,skill:rng(),growT:30+rng()*40,expAt:40+rng()*80,capAt:20+rng()*50,style:(((i+1)*2654435761)>>>0)%100<45?'def':'off',planets:0,home:hid,dead:false})});
+ homeArr.forEach((hid,i)=>{const nm=i<10?AI0[i]:`${ADJ[i%ADJ.length]} ${NOUN[Math.floor(i/ADJ.length)%NOUN.length]}${i>=ADJ.length*NOUN.length?' '+['','II','III','IV'][Math.min(3,Math.floor(i/(ADJ.length*NOUN.length)))]:''}`;
+  AIS.push({id:i+1,name:nm,hue:Math.round((i*137.5)%360),col:`hsl(${Math.round((i*137.5)%360)},70%,58%)`,tech:0,aggr:1.25+rng()*.55,skill:rng(),growT:4+rng()*12,expAt:3+rng()*10,capAt:2+rng()*6,style:(((i+1)*2654435761)>>>0)%100<45?'def':'off',planets:0,home:hid,dead:false})});
  for(const p of planets){if(homes.has(p.id)||p.id===ph.id)continue;
   const d=Math.hypot(p.x-ph.x,p.y-ph.y),r=rng();let pw,mt,tu;
   if(d<12000||r<.62){pw=15+rng()*75;mt=pw>50?2:1;tu=0}else if(r<.9){pw=120+rng()*380;mt=3;tu=Math.floor(rng()*2)}else if(r<.98){pw=600+rng()*1900;mt=5;tu=1+Math.floor(rng()*3)}else{pw=3000+rng()*6000;mt=7;tu=3+Math.floor(rng()*4)}
@@ -418,7 +422,7 @@ function resolveAttack(f){
  const info=defendersOf(o.kind,tgt),defOwner=info.owner,attName=ownerName(f.owner),tname=tgt.name,tx=tgt.x,ty=tgt.y;
  const myth=Object.keys(f.ships).some(t=>f.ships[t]>0&&SHIP[t].r==='M'),snap=[f,...info.fleets].map(d=>({d,x:d.x,y:d.y,h:d.h,owner:d.owner,rc:fleetRarCol(d)}));const r=fight(f,info);const fxd=spawnBattle(f,tx,ty,defOwner,r,myth);
  if(fxd){const nw=performance.now();for(const sn of snap)if(!basePower(sn.d.ships))GH.push({x:sn.x,y:sn.y,h:sn.h,owner:sn.owner,rc:sn.rc,until:nw+(sn.d===f?fxd-200:FXG)})}
- f.order=null;f.cool=(f.owner>0&&S.T<1200)?8:25;let captured=false,held=false;
+ f.order=null;f.cool=f.owner>0?Math.round(3+22*(1-RUSH())):25;let captured=false,held=false;
  for(const d of info.fleets)if(d!==f&&!basePower(d.ships))removeFleet(d);
  if(o.kind==='planet')tgt.dirty=true;
  if(r.win&&o.kind==='planet'){
@@ -426,7 +430,7 @@ function resolveAttack(f){
   else{captured=true;const prev=tgt.owner;
    if(f.owner===0){tgt.garrison={};tgt.b={mine:1,power:0,turret:0,lab:0,hub:0,yard:0}}
    else{tgt.garrison=genShips(40+Math.random()*80,Math.min(TIERMAX,2+Math.floor(AIS[f.owner-1].tech/3)),Math.random);tgt.b={mine:0,power:0,turret:prev===0?1:Math.min(tgt.b.turret,2),lab:0,hub:0,yard:0}}
-   setOwner(tgt,f.owner);f.ax=tgt.x;f.ay=tgt.y;if(f.owner===0&&basePower(f.ships))f.order={type:'move',x:tgt.x,y:tgt.y};if(f.owner>0)AIS[f.owner-1].capAt=S.T+((prev===-1&&S.T<1500)?12+Math.random()*28:150+Math.random()*250)}}
+   setOwner(tgt,f.owner);f.ax=tgt.x;f.ay=tgt.y;if(f.owner===0&&basePower(f.ships))f.order={type:'move',x:tgt.x,y:tgt.y};if(f.owner>0)AIS[f.owner-1].capAt=S.T+((prev===-1?(2+Math.random()*5+(1-RUSH())*(100+Math.random()*150)):150+Math.random()*250)*(1-.9*SNOW(AIS[f.owner-1])))}}
  const left=Object.assign({},f.ships),attDead=!basePower(f.ships);if(attDead)removeFleet(f);
  const win=r.win;
  if(f.owner===0||defOwner===0){
@@ -440,45 +444,53 @@ function resolveAttack(f){
 function setAttack(f,kind,id){f.order={type:'atk',kind,id}}
 
 /* ===== KI ===== */
+const RUSH=()=>Math.max(0,Math.min(1,1-(S.T-600)/1800));
+const SNOW_START=25000,SNOW_RAMP=40000,SNOW_MAXPL=40;
+let _snId=0,_snAt=-1;
+function snowLeader(){if(S.T<_snAt)return _snId;_snAt=S.T+120;let b=0,id=0;for(const a of AIS)if(!a.dead&&a.planets>b){b=a.planets;id=a.id}_snId=id;return id}
+const SNOWK=()=>S.T<SNOW_START?0:Math.min(1,(S.T-SNOW_START)/SNOW_RAMP)*Math.max(0,1-PS.size/SNOW_MAXPL);
+const SNOW=ai=>{const k=SNOWK();return k>0&&ai.id===snowLeader()?k:0};
 function aiGachaShip(ai){const T=S.T,sk=ai.skill,pool=[];
  if(T>900&&sk>.35)pool.push('R');if(T>2400&&sk>.5)pool.push('E');if(T>5000&&sk>.7)pool.push('L');
  if(!pool.length)return null;const t=pool[Math.floor(Math.pow(Math.random(),1.6)*pool.length)],l=SHIPS.filter(s=>s.g&&s.r===t);return l[Math.floor(Math.random()*l.length)].id}
 function aiGrow(ai){
- ai.tech=Math.min(24,Math.floor(S.T/240*(.6+ai.skill*.8)));{const el=ELV(ai);if(el===2)ai.tech=24;else if(el===1)ai.tech=Math.max(ai.tech,15)}
+ ai.tech=Math.min(24,Math.floor(S.T/240*(.6+ai.skill*.8)));{const el=ELV(ai);if(el===2)ai.tech=24;else if(el===1)ai.tech=Math.max(ai.tech,15);else if(S.meds&&S.meds[ai.id])ai.tech=Math.max(ai.tech,8)}
  const mine=fleets.filter(f=>f.owner===ai.id);
  if(!ai.planets&&!mine.length){ai.dead=true;return}
- const income=ai.planets?(15+6*ai.planets)*(1+S.T/3000)*(.8+ai.skill*.5)*EF(ai):0,maxTier=Math.min(TIERMAX,2+Math.floor(ai.tech/3));ai.bank=Math.min(60000,(ai.bank||0)+income);const budget=Math.min(ai.bank,income*3);
+ const income=ai.planets?(15+6*ai.planets)*(1+S.T/3000)*(.8+ai.skill*.5)*EF(ai):0,maxTier=Math.min(TIERMAX,2+Math.floor(ai.tech/3));ai.bank=Math.min(60000*(1+SNOW(ai)*100),(ai.bank||0)+income);const budget=Math.min(ai.bank,income*3);
  let f;
  if(!mine.length){const hp=planets.find(p=>p.owner===ai.id);if(!hp)return;f=newFleet(ai.id,ai.name+' Flotte',{},true,hp.x+(Math.random()-.5)*200,hp.y+(Math.random()-.5)*200);f.ax=f.x;f.ay=f.y}
  else{const pool=mine.filter(x=>!isStealthFleet(x));if(pool.length)f=pool[Math.floor(Math.random()*pool.length)];else{const hp=planets.find(p=>p.owner===ai.id);if(!hp)return;f=newFleet(ai.id,ai.name+' Flotte',{},true,hp.x,hp.y);f.ax=f.x;f.ay=f.y}}
  if(fleetPower(f)<30000*EF(ai)&&budget>=30){const g=genShips(budget,maxTier,Math.random);for(const t in g)f.ships[t]=(f.ships[t]||0)+g[t];ai.bank-=Math.min(budget,basePower(g))}
  {let gc=0;for(const x of fleets)if(x.owner===ai.id)for(const t in x.ships)if(SHIP[t].g)gc+=x.ships[t];
   if(gc<1+Math.min(4,Math.floor(S.T/4000*(.4+ai.skill)))&&S.T>=(ai.gachaAt||900)){ai.gachaAt=S.T+600+Math.random()*900;const id=aiGachaShip(ai);if(id)f.ships[id]=(f.ships[id]||0)+1}}
- if(mine.length<4&&fleetPower(f)>1200&&Math.random()<.5){const g={};for(const t in f.ships){const h=Math.floor(f.ships[t]/2);if(h>0){g[t]=h;f.ships[t]-=h}}
+ if(mine.length<(RUSH()>0?7:4)&&fleetPower(f)>(RUSH()>0?260:1200)&&Math.random()<.5){const g={};for(const t in f.ships){const h=Math.floor(f.ships[t]/2);if(h>0){g[t]=h;f.ships[t]-=h}}
   if(basePower(g)){const n=newFleet(ai.id,ai.name+' Flotte',g,true,f.x,f.y);n.ax=f.ax;n.ay=f.ay}}
 
- if(ai.bank>600&&mine.length<Math.min(8+ELV(ai)*4,2+Math.floor(ai.planets/2))+(ai.style==='def'?0:2)){const hp=aiHomePlanet(ai);if(hp){const g=genShips(Math.min(ai.bank,4000),maxTier,Math.random),bp=basePower(g);if(bp){ai.bank-=bp;const n=newFleet(ai.id,ai.name+' Flotte',g,true,hp.x+(Math.random()-.5)*200,hp.y+(Math.random()-.5)*200);n.ax=n.x;n.ay=n.y}}}
+ if(ai.bank>600&&mine.length<Math.min(8+ELV(ai)*4+Math.floor(SNOW(ai)*60),2+Math.floor(ai.planets/2))+(ai.style==='def'?0:2)+Math.round(RUSH()*4)){const hp=aiHomePlanet(ai);if(hp){const g=genShips(Math.min(ai.bank,4000*(1+SNOW(ai)*20)),maxTier,Math.random),bp=basePower(g);if(bp){ai.bank-=bp;const n=newFleet(ai.id,ai.name+' Flotte',g,true,hp.x+(Math.random()-.5)*200,hp.y+(Math.random()-.5)*200);n.ax=n.x;n.ay=n.y}}}
  aiStealth(ai)
 }
 function aiHomePlanet(ai){const h=planets[ai.home];return h&&h.owner===ai.id?h:planets.find(p=>p.owner===ai.id)}
-const aiCap=ai=>(ai.style==='def'?6:8)+Math.floor(S.T/900*(.5+ai.skill));
-const aggrOf=ai=>ai.aggr*(ai.style==='def'?1.35:.85);
+const aiCap=ai=>(ai.style==='def'?6:8)+Math.floor(S.T/900*(.5+ai.skill))+Math.round(RUSH()*22)+Math.floor(SNOW(ai)*4000);
+const aggrOf=ai=>ai.aggr*(ai.style==='def'?1.35:.85)*(1-.4*SNOW(ai));
 function think(f){
  if(f.owner<=0||f.dead)return;const ai=AIS[f.owner-1];
  if(f.order){checkWarn(f);return}
  if(f.cool>0||S.T<12||!basePower(f.ships))return;
+ {const rv=aiRevenge(f,ai);if(rv){setAttack(f,rv.kind,rv.id);checkWarn(f);return}}
  let best=null,bs=1e18;
  const cx=cellX(f.x),cy=cellY(f.y),mayTake=S.T>=ai.capAt&&ai.planets<aiCap(ai);
  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const p=planetAt(cx+dx,cy+dy);if(!mayTake||!p||p.owner===f.owner||Math.hypot(p.x-f.x,p.y-f.y)>AGGRO)continue;
   const e=estimate(f.ships,f.owner,defendersOf('planet',p));if(e.aE>=e.dE*aggrOf(ai)&&e.dE<bs){bs=e.dE;best={kind:'planet',id:p.id}}}
  for(const g of nearby(f.x,f.y,ai.style==='def'?2200:AGGRO,g=>g.owner!==f.owner)){const e=estimate(f.ships,f.owner,defendersOf('fleet',g));if(e.aE>=e.dE*aggrOf(ai)&&e.dE<bs){bs=e.dE;best={kind:'fleet',id:g.id}}}
- if(!best&&mayTake&&S.T>=ai.expAt){ai.expAt=S.T+(S.T<900?20+Math.random()*40:100+Math.random()*150);let bsc=1e18;const R=6;
-  for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const p=planetAt(cx+dx,cy+dy);if(!p||p.owner===f.owner)continue;
+ if(!best&&mayTake&&S.T>=ai.expAt){ai.expAt=S.T+((2+Math.random()*4+(1-RUSH())*(80+Math.random()*150))*(1-.9*SNOW(ai)));let bsc=1e18;const R=RUSH()>.3?5:6;
+  for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const p=planetAt(cx+dx,cy+dy);if(!p||p.owner===f.owner)continue;if(RUSH()>.3&&p.owner!==-1)continue;
    const e=estimate(f.ships,f.owner,defendersOf('planet',p));if(e.aE<e.dE*aggrOf(ai)*1.2)continue;const sc=(Math.hypot(p.x-f.x,p.y-f.y)+e.dE*2)*(p.owner===-1?1:(S.T<1200?3:1));if(sc<bsc){bsc=sc;best={kind:'planet',id:p.id}}}}
  if(!best)best=aiWar(f,ai);if(best){setAttack(f,best.kind,best.id);checkWarn(f)}
 }
-function checkWarn(f){const o=f.order;if(!o||o.type!=='atk'||fleetVis(f)<.5||(f.alerted&&S.T-f.alerted<40))return;const t=targetPos(o);if(!t||t.owner!==0)return;
- if(Math.hypot(t.x-f.x,t.y-f.y)<WARN()){f.alerted=S.T;pushAlert(`${ownerName(f.owner)} greift ${t.name} an! Stärke ${fmt(fleetPower(f))}, Ankunft in ca. ${Math.round(Math.hypot(t.x-f.x,t.y-f.y)/fleetSpeed(f)/S.gs)} s`,t.x,t.y,{kind:o.kind,id:o.id,aid:f.id})}}
+function checkWarn(f){const o=f.order;if(!o||o.type!=='atk'||fleetVis(f)<.5)return;const t=targetPos(o);if(!t||t.owner!==0)return;
+ const key=o.kind+':'+o.id;if(f.alK===key)return;f.alK=key;f.alerted=S.T;
+ pushAlert(`${ownerName(f.owner)} greift ${t.name} an! Stärke ${fmt(fleetPower(f))}, Ankunft in ca. ${Math.round(Math.hypot(t.x-f.x,t.y-f.y)/fleetSpeed(f)/S.gs)} s`,t.x,t.y,{kind:o.kind,id:o.id,aid:f.id})}
 
 /* ===== SIMULATION ===== */
 let thinkPtr=0,hashT=0;
@@ -509,7 +521,7 @@ function update(dt){
  hashT+=dt;if(hashT>.5){hashT=0;rebuildHash()}
  const K=Math.min(40,Math.ceil(8*S.gs));
  for(let k=0;k<K&&fleets.length;k++){thinkPtr=(thinkPtr+1)%fleets.length;think(fleets[thinkPtr])}
- for(const ai of AIS)if(!ai.dead&&S.T>=ai.growT){ai.growT=S.T+35+Math.random()*25;aiGrow(ai)}
+ for(const ai of AIS)if(!ai.dead&&S.T>=ai.growT){ai.growT=S.T+(8+Math.random()*10)+(1-RUSH())*(27+Math.random()*15);aiGrow(ai)}
  for(const ai of AIS)if(!ai.dead&&S.T>=(ai.defAt||0))aiDefend(ai);
 }
 
@@ -639,7 +651,7 @@ function renderMini(){const m=mctx,s=150/WORLD;m.fillStyle='#02040a';m.fillRect(
 
 /* ===== SPEICHERN ===== */
 function save(){if(window.NOSAVE)return;S.lastSeen=Date.now();try{const d={v:5,S:Object.assign({},S,{logs:S.logs.slice(0,30)}),act:activeFleet,
- fleets:fleets.map(f=>({id:f.id,owner:f.owner,name:f.name,x:f.x,y:f.y,ships:f.ships,placed:f.placed,ax:f.ax,ay:f.ay,guard:f.guard,order:f.owner===0?f.order:null})),
+ fleets:fleets.map(f=>({id:f.id,owner:f.owner,name:f.name,x:f.x,y:f.y,ships:f.ships,placed:f.placed,ax:f.ax,ay:f.ay,guard:f.guard,gw:f.gw,order:f.owner===0?f.order:null})),
  ais:AIS.map(a=>({tech:a.tech,growT:a.growT,expAt:a.expAt,dead:a.dead,gachaAt:a.gachaAt,bank:a.bank})),
  ov:planets.filter(p=>p.dirty).map(p=>({id:p.id,o:p.owner,g:p.garrison,b:p.b}))};localStorage.setItem(KEY,JSON.stringify(d))}catch(e){}}
 function load(){try{const raw=localStorage.getItem(KEY);if(!raw)return false;const d=JSON.parse(raw);if(d.v!==5)return false;
@@ -959,6 +971,13 @@ function aiStealth(ai){if(ai.dead||!ai.planets||STL_IDX<0)return;const lv=ELV(ai
  if(Math.random()>.3||fleets.filter(f=>f.owner===ai.id&&isStealthFleet(f)).length>=1+lv)return;
  const n=Math.floor(Math.min((ai.bank||0)*.5,500*EF(ai))/SHIP.stealth.power);if(n<2)return;const hp=aiHomePlanet(ai);if(!hp)return;
  ai.bank-=n*SHIP.stealth.power;const f=newFleet(ai.id,ai.name+' Schattenstaffel',{stealth:n},true,hp.x+(Math.random()-.5)*200,hp.y+(Math.random()-.5)*200);f.ax=f.x;f.ay=f.y}
+/* --- Bot-Freischaltung (Spielzeit in s): Spieler bekommt Zeit zum Aufbau --- */
+/* Menschenähnlich: jeder Bot hat Persönlichkeit, eigenes Forschungstempo und reagiert auf Bedrohung */
+const NEED={flak:3,mine:6,rk:8,shield:10};
+function unl(ai,k){if(!ai.pers){ai.pers=ai.style==='def'?(Math.random()<.6?'turtle':'balanced'):(Math.random()<.5?'rusher':'boomer');ai.lag=Math.floor(Math.random()*3)}
+ if(S.T<600||(ai.planets<2&&k!=='flak'))return 0;
+ const need=Math.max(1,NEED[k]+ai.lag+(ai.pers==='turtle'?-2:ai.pers==='rusher'?2:0)-Math.round((ai.thr||0)*3));
+ return Math.max(0,Math.min(1,(ai.tech+1-need)/4))}
 /* --- KI-Minen & KI-Flak --- */
 let _xrf=0;
 function ensureAD(){if(!S.xm)S.xm=[];if(!S.xa)S.xa=[]}
@@ -975,44 +994,54 @@ function tickAD(dt,nw){const ep=f=>f.owner===0&&f.placed&&!f.dead&&basePower(f.s
   if(nw>(a.fxT||0)&&FX.length<400){a.fxT=nw+420;FX.push({k:'shot',t0:nw,dur:200,x0:pos.x,y0:pos.y,x1:bx,y1:by,c:'#e879f9'});FX.push({k:'boom',t0:nw+200,dur:300,x1:bx,y1:by,s:10,c:'#fde047'})}
   if(nw>(a.logT||0)){a.logT=nw+10000;addLog('[FLAK] '+ai.name+' beschießt '+nm+'!',bx,by)}}
  if(ch&&nw-_xrf>600){_xrf=nw;refreshUI()}}
-const ELV=ai=>(S.elites&&S.elites[ai.id])||0,EF=ai=>{const e=ELV(ai);return e===2?3:e===1?1.7:1};
+const ELV=ai=>(S.elites&&S.elites[ai.id])||0,EF=ai=>{const e=ELV(ai);return (e===2?3:e===1?1.7:(S.meds&&S.meds[ai.id])?1.3:1)*(1+SNOW(ai)*30)};
 function aiDefend(ai){ensureAD();if(ai.dead)return;const now=S.T,el=Math.min(60,now-(ai.dT||now)),lv=ELV(ai);ai.dT=now;ai.defAt=now+5+Math.random()*6;
- {const inc=el*(2+ai.planets)*(1+now/3000)*(.8+(ai.skill||0)*.5)*(lv===2?2:lv===1?1.4:1),fs=ai.style==='def'?.3:.55;ai.dbank=Math.min(2500,(ai.dbank||0)+inc*(1-fs));ai.bank=Math.min(60000,(ai.bank||0)+inc*fs)}
+ {const pts=[],hp=planets[ai.home];if(hp&&hp.owner===ai.id)pts.push(hp);const mf=fleets.filter(f=>f.owner===ai.id&&!f.dead);if(mf.length)pts.push(mf[Math.floor(Math.random()*mf.length)]);
+  let th=0;for(const q of pts)if(nearby(q.x,q.y,6000,e=>e.owner===0&&e.placed&&!e.dead&&basePower(e.ships)>400).length)th=1;
+  ai.thr=th?Math.min(1,(ai.thr||0)+.35):(ai.thr||0)*.9}
+ {const inc=el*(2+ai.planets)*(1+now/3000)*(.8+(ai.skill||0)*.5)*(lv===2?2:lv===1?1.4:1),fs=ai.style==='def'?.3:.55;ai.dbank=Math.min(2500,(ai.dbank||0)+inc*(1-fs));ai.bank=Math.min(60000*(1+SNOW(ai)*100),(ai.bank||0)+inc*fs)}
  if(ai.dbank<300)return;
  /* Priorität: erst genug Flotten, dann Verteidigung */
- const fcap=Math.min(8+lv*4,2+Math.floor(ai.planets/2)),myF=fleets.filter(f=>f.owner===ai.id&&!f.dead);
- const def=ai.style==='def',toFleet=()=>{ai.bank=Math.min(60000,(ai.bank||0)+ai.dbank*.7);ai.dbank*=.3};
+ const fcap=Math.min(8+lv*4+Math.floor(SNOW(ai)*60),2+Math.floor(ai.planets/2)),myF=fleets.filter(f=>f.owner===ai.id&&!f.dead);
+ const def=ai.style==='def',toFleet=()=>{ai.bank=Math.min(60000*(1+SNOW(ai)*100),(ai.bank||0)+ai.dbank*.7);ai.dbank*=.3};
+ if(S.xa.length>3000||S.xm.length>1500){toFleet();return}
  if(myF.length<Math.ceil(fcap*(def?.6:.9))){toFleet();return}
  if(myF.reduce((s,f)=>s+fleetPower(f),0)<ai.planets*(def?240:380)*(1+ai.tech*.15)){toFleet();return}
  const own=planets.filter(p=>p.owner===ai.id);if(!own.length)return;
  const pp=[...PS].map(i=>planets[i]);
  const info=own.map(p=>{let d=1e9,q=null;for(const t of pp){const e=Math.hypot(t.x-p.x,t.y-p.y);if(e<d){d=e;q=t}}return{p,d,q}}).sort((x,y)=>x.d-y.d);
- const cnt=(arr,fn)=>arr.reduce((n,x)=>n+(fn(x)?1:0),0),per=def?Math.min(8,2+Math.floor(ai.tech/3)+lv):Math.min(4,1+Math.floor(ai.tech/5)+lv);
+ const cnt=(arr,fn)=>arr.reduce((n,x)=>n+(fn(x)?1:0),0),per0=def?Math.min(8,2+Math.floor(ai.tech/3)+lv):Math.min(4,1+Math.floor(ai.tech/5)+lv),per=Math.ceil(per0*unl(ai,'flak'));
  /* Flak: Heimatplanet und Frontplaneten zuerst */
  const front=info.slice(0,Math.max(1,Math.ceil(info.length/3))),order=[info.find(x=>x.p.id===ai.home),...front,...info].filter(Boolean);
  let best=null;for(const x of order){const c=cnt(S.xa,a=>a.pid===x.p.id);if(c<per&&(!best||c<best.c))best={x,c}}
  if(best){S.xa.push({id:S.nextB=(S.nextB||0)+1,pid:best.x.p.id,ang:.6+best.c*.8+Math.random()*.3,o:ai.id});ai.dbank-=300}
  /* Minen: gezielt zwischen Frontplanet und dem nächsten Spielerplaneten */
- if(ai.dbank>=400&&info[0]&&info[0].q&&info[0].d<30000){const mcap=Math.min(8+lv*3,1+Math.floor(ai.planets/2)+Math.floor(ai.tech/6)+lv)*(def?1:.5);
+ if(unl(ai,'mine')>0&&ai.dbank>=400&&info[0]&&info[0].q&&info[0].d<30000){const mcap=Math.max(1,Math.floor(Math.min(8+lv*3,1+Math.floor(ai.planets/2)+Math.floor(ai.tech/6)+lv)*(def?1:.5)*unl(ai,'mine')));
   if(cnt(S.xm,m=>m.o===ai.id)<mcap){const x=info[Math.floor(Math.random()*Math.min(3,info.length))];if(x.q){
    const ang=Math.atan2(x.q.y-x.p.y,x.q.x-x.p.x)+(Math.random()-.5)*.7,d=700+Math.random()*900,mx=clamp(x.p.x+Math.cos(ang)*d,-HALF,HALF),my=clamp(x.p.y+Math.sin(ang)*d,-HALF,HALF);
    if(!S.xm.some(m=>Math.hypot(m.x-mx,m.y-my)<450)){S.xm.push({id:S.nextB=(S.nextB||0)+1,x:mx,y:my,o:ai.id,t0:S.T+20});ai.dbank-=400}}}}}
 /* --- Elite-Bots: ca. 5 sehr starke (★★) und 15 starke (★) --- */
-function seedElites(){S.elites={};const cap=planets[S.capital];if(!cap)return;
+function seedElites(){S.elites={};S.meds={};const cap=planets[S.capital];if(!cap)return;
  const pl=[...PS].map(i=>planets[i]);pl.push(cap);
- const cands=AIS.filter(a=>!a.dead&&planets[a.home].owner===a.id&&pl.every(p=>Math.hypot(p.x-planets[a.home].x,p.y-planets[a.home].y)>26000));
- for(let i=cands.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cands[i],cands[j]]=[cands[j],cands[i]]}
- const picked=[],pick=(n,lvl,dist)=>{for(const a of cands){if(n<=0)break;if(S.elites[a.id])continue;const h=planets[a.home];if(picked.every(q=>Math.hypot(planets[q.home].x-h.x,planets[q.home].y-h.y)>dist)){S.elites[a.id]=lvl;picked.push(a);n--}}return n};
- let r=pick(5,2,30000);if(r>0)r=pick(r,2,15000);if(r>0)pick(r,2,0);
- let r1=pick(15,1,14000);if(r1>0)r1=pick(r1,1,7000);if(r1>0)pick(r1,1,0);
- for(const a of picked)eliteBuild(a,S.elites[a.id])}
-function eliteBuild(ai,lvl){const R=Math.random,hp=planets[ai.home],mt=lvl===2?TIERMAX:Math.min(TIERMAX,9),nPl=lvl===2?26+Math.floor(R()*12):9+Math.floor(R()*7);
+ const dmin=a=>{const h=planets[a.home];let m=1e9;for(const p of pl)m=Math.min(m,Math.hypot(p.x-h.x,p.y-h.y));return m};
+ const all=AIS.filter(a=>!a.dead&&planets[a.home].owner===a.id).map(a=>({a,d:dmin(a)}));
+ for(let i=all.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[all[i],all[j]]=[all[j],all[i]]}
+ const picked=[],pick=(n,lvl,minD,sep)=>{for(const c of all){if(n<=0)break;const a=c.a;if(S.elites[a.id]||S.meds[a.id]||c.d<minD)continue;const h=planets[a.home];if(picked.every(q=>Math.hypot(planets[q.home].x-h.x,planets[q.home].y-h.y)>sep)){if(lvl===3)S.meds[a.id]=1;else S.elites[a.id]=lvl;picked.push(a);n--}}return n};
+ /* sehr stark (★★): weit weg vom Spieler */
+ let r=pick(8,2,45000,30000);if(r>0)r=pick(r,2,38000,15000);if(r>0)pick(r,2,30000,0);
+ let r1=pick(28,1,26000,14000);if(r1>0)r1=pick(r1,1,20000,7000);if(r1>0)pick(r1,1,16000,0);
+ let r3=pick(70,3,9000,9000);if(r3>0)r3=pick(r3,3,6000,5000);if(r3>0)pick(r3,3,5000,0);
+ for(const a of picked)eliteBuild(a,S.elites[a.id]||3)}
+function eliteBuild(ai,lvl){const R=Math.random,hp=planets[ai.home],T=Math.min(TIERMAX,9),
+ K={2:{mt:TIERMAX,np:26+Math.floor(R()*12),gar:900,tu:3,hg:14000,ht:6,tech:24,nf:9,fp:18000,fr:14000,fn:' Armada',bank:20000,far:14000},
+    1:{mt:T,np:9+Math.floor(R()*7),gar:420,tu:2,hg:4500,ht:4,tech:15,nf:4,fp:4500,fr:4500,fn:' Kampfflotte',bank:6000,far:14000},
+    3:{mt:Math.min(TIERMAX,6),np:4+Math.floor(R()*4),gar:200,tu:1,hg:1500,ht:3,tech:8,nf:3,fp:1200,fr:1200,fn:' Flotte',bank:1500,far:6000}}[lvl];
  const pl=[...PS].map(i=>planets[i]);
- const free=planets.filter(p=>p.owner===-1&&pl.every(q=>Math.hypot(q.x-p.x,q.y-p.y)>14000)).map(p=>({p,d:Math.hypot(p.x-hp.x,p.y-hp.y)})).sort((a,b)=>a.d-b.d).slice(0,nPl);
- for(const{p}of free){setOwner(p,ai.id);p.garrison=genShips((lvl===2?900:420)*(.6+R()),mt,R);p.b.turret=lvl===2?3:2}
- hp.garrison=genShips(lvl===2?14000:4500,mt,R);hp.b.turret=lvl===2?6:4;hp.dirty=true;ai.tech=lvl===2?24:15;
- const nf=lvl===2?9:4;for(let k=0;k<nf;k++){const f=newFleet(ai.id,ai.name+(lvl===2?' Armada':' Kampfflotte'),genShips(lvl===2?18000+R()*14000:4500+R()*4500,mt,R),true,hp.x+(R()-.5)*400,hp.y+(R()-.5)*400);f.ax=f.x;f.ay=f.y;f.wait=R()*5}
- ai.bank=(ai.bank||0)+(lvl===2?20000:6000);ai.expAt=Math.min(ai.expAt,S.T+120)}
+ const free=planets.filter(p=>p.owner===-1&&pl.every(q=>Math.hypot(q.x-p.x,q.y-p.y)>K.far)).map(p=>({p,d:Math.hypot(p.x-hp.x,p.y-hp.y)})).sort((a,b)=>a.d-b.d).slice(0,K.np);
+ for(const{p}of free){setOwner(p,ai.id);p.garrison=genShips(K.gar*(.6+R()),K.mt,R);p.b.turret=K.tu}
+ hp.garrison=genShips(K.hg,K.mt,R);hp.b.turret=K.ht;hp.dirty=true;ai.tech=K.tech;
+ for(let k=0;k<K.nf;k++){const f=newFleet(ai.id,ai.name+K.fn,genShips(K.fp+R()*K.fr,K.mt,R),true,hp.x+(R()-.5)*400,hp.y+(R()-.5)*400);f.ax=f.x;f.ay=f.y;f.wait=R()*5}
+ ai.bank=(ai.bank||0)+K.bank;ai.expAt=Math.min(ai.expAt,S.T+120)}
 
 const mineCap=()=>MINE_BASE+tb('mcap'),aaSlots=()=>AA_BASE+tb('fslot'),aaPos=a=>{const p=planets[a.pid];return{x:p.x+Math.cos(a.ang)*AA_D,y:p.y+Math.sin(a.ang)*AA_D}};
 const placeHint=()=>placing==='shield'?window.xShHint():placing==='mine'?`Weltraummine (${S.stock.mine} im Vorrat): Eigene Flotte anklicken, dann Doppelklick auf den Zielort = Flotte fliegt hin und legt die Mine • Esc = beenden`:`Flak-Plattform (${S.stock.aa} im Vorrat): Doppelklick auf einen eigenen Planeten = platzieren • Esc = beenden`;
@@ -1036,9 +1065,12 @@ function placeDef(sx,sy){ensureB();const k=placing;if(!S.stock[k]){placing=null;
   const used=S.aa.filter(a=>a.pid===pl.id);if(used.length>=aaSlots()){toast('Alle '+aaSlots()+' Flak-Plätze dieses Planeten sind belegt.');return}
   const id=S.nextB=(S.nextB||0)+1;S.aa.push({id,pid:pl.id,ang:.6+used.length*.8});S.stock.aa--;toast('Flak-Plattform auf '+pl.name+' platziert.')}
  playSound('ok');if(!S.stock[k])placing=null;setActive(null);refreshUI()}
-function hitFleet(f,dmg,gm){let np=0,gt=null;const norm={};for(const t in f.ships){const n=f.ships[t];if(n<=0)continue;if(SHIP[t].g){if(!gt||SHIP[t].power<SHIP[gt].power)gt=t}else{np+=SHIP[t].power*n;norm[t]=n}}
+const GHP=.4; /* Lebenspunkte eines Superschiffs = Stärke x 0.4, voller Minen-/Flak-Schaden */
+function hitFleet(f,dmg,gm){let np=0;const norm={},gts=[];for(const t in f.ships){const n=f.ships[t];if(n<=0)continue;if(SHIP[t].g)gts.push(t);else{np+=SHIP[t].power*n;norm[t]=n}}
  if(np>0){const ks=Object.keys(norm);applyLoss([norm],Math.min(.7,dmg/np));for(const t of ks){if(norm[t]>0)f.ships[t]=norm[t];else delete f.ships[t]}}
- if(gt){f.gw=(f.gw||0)+dmg*.5*(gm||1);const lim=SHIP[gt].power*.6;if(f.gw>=lim){f.gw-=lim;f.ships[gt]--;if(f.ships[gt]<=0)delete f.ships[gt];addLog('[SUPERSCHIFF] '+SHIP[gt].name+' wurde zerstört!',f.x,f.y)}}
+ if(gts.length){gts.sort((a,b)=>SHIP[a].power-SHIP[b].power);f.gw=(f.gw||0)+dmg*(gm||1);
+  for(const t of gts){const hp=SHIP[t].power*GHP;while(f.ships[t]>0&&f.gw>=hp){f.gw-=hp;f.ships[t]--;addLog('[SUPERSCHIFF] '+SHIP[t].name+' wurde zerstört!',f.x,f.y)}if(f.ships[t]<=0)delete f.ships[t];else break}
+  if(!gts.some(t=>f.ships[t]>0))f.gw=0}
  if(!basePower(f.ships))removeFleet(f)}
 let _bt=0;
 function tickDef(g){ensureB();ensureAD();if(!S.elites)seedElites();if(!S.mines.length&&!S.aa.length&&!S.xm.length&&!S.xa.length)return;_bt+=g;if(_bt<.2)return;const dt=_bt;_bt=0;const en=f=>f.owner>0&&!f.dead&&basePower(f.ships)>0,nw=performance.now();
@@ -1085,7 +1117,7 @@ function assignAll(pid){for(const f of fleets)if(f.owner===0&&basePower(f.ships)
 function aiWar(f,ai){if(S.T<240||S.T<ai.capAt||S.T<(ai.warAt||0)||ai.planets>=aiCap(ai)+8||fleetPower(f)<400)return null;
  if(ai.style==='def'&&Math.random()<.6){ai.warAt=S.T+90+Math.random()*120;return null}ai.warAt=S.T+(ai.style==='def'?90:30)+Math.random()*(ai.style==='def'?120:50);
  const cx=cellX(f.x),cy=cellY(f.y),R=6;let best=null,bsc=1e18;
- for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const p=planetAt(cx+dx,cy+dy);if(!p||p.owner<0||p.owner===f.owner||(p.owner===0&&p.id===S.capital))continue;
+ for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const p=planetAt(cx+dx,cy+dy);if(!p||p.owner<0||p.owner===f.owner||(p.owner===0&&p.id===S.capital&&S.T<1800))continue;
   const e=estimate(f.ships,f.owner,defendersOf('planet',p));if(e.aE<e.dE*aggrOf(ai))continue;
   const sc=Math.hypot(p.x-f.x,p.y-f.y)+e.dE*2;if(sc<bsc){bsc=sc;best={kind:'planet',id:p.id}}}
  return best}
@@ -1196,12 +1228,12 @@ RENDER.profile=rProfile;
 /* --- Hilfe --- */
 function rHelp(){setBody(`<div class="space-y-2 text-slate-300 text-[13px]"><p><b class="text-cyan-300">Ziel:</b> Du startest etwa auf <b>Rang 100</b> von 200. Baue Wirtschaft, Forschung und Flotten aus und werde die Nummer 1. <span class="text-red-400">Rot = Gegner.</span></p>
 <p><b class="text-cyan-300">Flotten:</b> Im Flottenmenü zusammenstellen, aktiv setzen und auf der Karte innerhalb deines Gebietes platzieren (Doppelklick, oder auf dem Handy mit „Tippen=Bewegen“ einfach antippen).</p>
-<p><b class="text-cyan-300">Verteidigung:</b> Kolonie antippen → <i>Flotte zuweisen</i>. Wachflotten verteidigen automatisch und kehren nach Gefechten zurück. Minen musst du mit einer Flotte zum Zielort bringen (Raumwerft → Mine → „Mit Flotte legen“); abgelegt werden sie erst nach einigen Sekunden scharf.</p>
+<p><b class="text-cyan-300">Verteidigung:</b> Kolonie antippen → <i>Flotte zuweisen</i>. Wachflotten verteidigen automatisch und kehren nach Gefechten zurück. Minen musst du mit einer Flotte zum Zielort bringen (Raumwerft → Mine → „Mit Flotte legen“); abgelegt werden sie erst nach einigen Sekunden scharf. Gegnerische Minen kannst du im Raketenstart anvisieren: kleine Raketen entschärfen sie, mittlere/große zünden sie (mit Kettenreaktion und Schaden an allen Flotten im Radius – Abstand halten!). Gegner-KIs greifen andere KIs und dich an, sobald in ihrer Nähe keine freien Planeten mehr zu holen sind, und beschießen Minen mit Raketen.</p>
 <p><b class="text-cyan-300">Angriffswarnung:</b> Greift ein Gegner an, siehst du Ankunftszeit und einen <i>Rückzug</i>-Button, der alle Flotten im Gefahrenbereich zu einer sicheren Kolonie schickt. Offline wirst du nie angegriffen.</p>
 <p><b class="text-cyan-300">Forschung:</b> Dauert Zeit (nur eine gleichzeitig), hat Ebenen und Mehrfach-Voraussetzungen. Labore und Wissenschafts-Techs beschleunigen.</p>
 <p><b class="text-cyan-300">Gacha &amp; Daily:</b> Warp-Tokens gibt es täglich, bei Siegen und per Credits. Superschiffe sind extrem stark.</p>
 <p><b class="text-cyan-300">Ressourcen-Info:</b> Klicke oben in der Leiste auf eine Ressource – du siehst Produktion pro Minute, woher du sie bekommst und wofür du sie brauchst. Fahre mit der Maus über Buttons, Planeten und Flotten für Tooltips.</p>
-<p><b class="text-cyan-300">Gegner-Verteidigung:</b> KI-Imperien bauen ebenfalls Minen und Flak-Plattformen (violett dargestellt – deine Minen sind gelb-orange, deine Flaks blau). Elite-Imperien (★ stark, ★★ sehr stark) haben sich weit ausgebreitet, besitzen mehr und größere Flotten und rüsten schneller auf – ideale Gegner für das späte Spiel. Ländergrenzen: dein Gebiet ist leicht blau mit markanterer Grenze, Gegner sind dezent rot, neutrale Gebiete grau (änderbar im Hilfe-Menü). Tarn-Jäger-Flotten sind für Gegner erst kurz vor ihrem Ziel sichtbar – deine eigenen erscheinen halbtransparent. Nahrung &amp; Wasser versorgen deine Kolonien: ein ausreichender Vorrat beider Güter steigert die Produktion aller anderen Planeten und deine Credits um bis zu +20 % (die Ressourcen-Leiste färbt sich bei knappem Vorrat gelb/rot). Pro Planet sind bis zu 8 Flak-Plattformen möglich (Forschung „Flak-Batterien“) rund um ihre Kolonien. Sie treffen nur deine Flotten – plane Angriffe also mit Abstand oder mit genug Reserve.</p></div><div class="flex gap-2 mt-4">${btn('Jetzt speichern',"save();toast('Gespeichert.')")}${btn('Profil & Spielstand',"openModal('profile')",'slate')}${btn('Screen-Effekte (Shake/Blitz): '+(FXCFG.on?'AN':'AUS'),'toggleFx()','slate')}${btn('Ländergrenzen: '+(BORD.on?'AN':'AUS'),'toggleBord()','slate')}</div>`)}
+<p><b class="text-cyan-300">Gegner-Verteidigung:</b> KI-Imperien bauen ebenfalls Minen und Flak-Plattformen (violett dargestellt – deine Minen sind gelb-orange, deine Flaks blau). Elite-Imperien (◆ mittel, ★ stark, ★★ sehr stark) haben sich weit ausgebreitet, besitzen mehr und größere Flotten und rüsten schneller auf – ideale Gegner für das späte Spiel. Ländergrenzen: dein Gebiet ist leicht blau mit markanterer Grenze, Gegner sind dezent rot, neutrale Gebiete grau (änderbar im Hilfe-Menü). Tarn-Jäger-Flotten sind für Gegner erst kurz vor ihrem Ziel sichtbar – deine eigenen erscheinen halbtransparent. Nahrung &amp; Wasser versorgen deine Kolonien: ein ausreichender Vorrat beider Güter steigert die Produktion aller anderen Planeten und deine Credits um bis zu +20 % (die Ressourcen-Leiste färbt sich bei knappem Vorrat gelb/rot). Pro Planet sind bis zu 8 Flak-Plattformen möglich (Forschung „Flak-Batterien“) rund um ihre Kolonien. Sie treffen nur deine Flotten – plane Angriffe also mit Abstand oder mit genug Reserve.</p></div><div class="flex gap-2 mt-4">${btn('Jetzt speichern',"save();toast('Gespeichert.')")}${btn('Profil & Spielstand',"openModal('profile')",'slate')}${btn('Screen-Effekte (Shake/Blitz): '+(FXCFG.on?'AN':'AUS'),'toggleFx()','slate')}${btn('Ländergrenzen: '+(BORD.on?'AN':'AUS'),'toggleBord()','slate')}</div>`)}
 RENDER.help=rHelp;
 
 /* --- Init --- */
@@ -1438,7 +1470,7 @@ function rkTick(g){for(let i=RKT.length-1;i>=0;i--){const r=RKT[i];
  if(d<60||d<=st){rkImpact(r,t);RKT.splice(i,1)}}}
 function botTick(g){_b2+=g;if(_b2<3)return;_b2=0;
  for(const f of fleets){if(f.owner<=0||f.dead)continue;const ai=AIS[f.owner-1];if(!ai||ai.dead)continue;if(f.bk===undefined)f.bk=S.T+120+Math.random()*500;const pw=fleetPower(f);
-  if(S.T>=f.bk&&pw>1500&&rkOk(f)){f.bk=S.T+300+Math.random()*500;if((ai.bank||0)>500){const sl=1+Math.floor(ai.tech/8)+ELV(ai);f.rk=f.rk||[];
+  if(unl(ai,'rk')>0&&S.T>=f.bk&&pw>1500&&rkOk(f)){f.bk=S.T+300+Math.random()*500;if((ai.bank||0)>500){const sl=1+Math.floor(ai.tech/8)+ELV(ai);f.rk=f.rk||[];
    if(f.rk.length<sl){f.rk.push(mkPack(pw>25000?'L':pw>8000?'M':'S'));ai.bank-=500}
    if((f.rd||0)<1+Math.floor(ai.tech/4)+ELV(ai)){f.rd=(f.rd||0)+1;ai.bank-=150}}}
   if(f.rk&&f.rk.length&&S.T>=(f.fa||0)){f.fa=S.T+8+Math.random()*10;let tg=null;const o=f.order;
@@ -1523,6 +1555,7 @@ function rkDraw(){if(!RK)return;const f=fleetById.get(RK.fid),cv2=$('rkCv');if(!
  const c=cv2.getContext('2d'),R=rkRange(),M=240,sc=M/R,P=(x,y)=>[M+(x-f.x)*sc,M+(y-f.y)*sc],now=performance.now();
  const L=nearby(f.x,f.y,R,e=>e.owner!==0&&!e.dead&&fleetVis(e)>.5).map(e=>({kind:'fleet',id:e.id,x:e.x,y:e.y,name:e.name,owner:e.owner}));
  const k=Math.ceil(R/CELL),cx=cellX(f.x),cy=cellY(f.y);for(let dy=-k;dy<=k;dy++)for(let dx=-k;dx<=k;dx++){const p=planetAt(cx+dx,cy+dy);if(p&&p.owner!==0&&Math.hypot(p.x-f.x,p.y-f.y)<=R)L.push({kind:'planet',id:p.id,x:p.x,y:p.y,name:p.name,owner:p.owner})}
+ for(const m of (S.xm||[]))if(Math.hypot(m.x-f.x,m.y-f.y)<=R)L.push({kind:'mine',id:m.id,x:m.x,y:m.y,name:'Gegnerische Mine',owner:m.o});
  for(const [pe,r] of NET.rem){for(const a of r.fl)if(Math.hypot(a[1]-f.x,a[2]-f.y)<=R)L.push({kind:'rf',id:pe+':'+a[0],x:a[1],y:a[2],name:r.n+' (Freund)',owner:-9});for(const i of r.pl){const p=planets[i];if(p&&Math.hypot(p.x-f.x,p.y-f.y)<=R)L.push({kind:'rp',id:pe+':'+i,x:p.x,y:p.y,name:r.n+': '+p.name,owner:-9})}}
  let best=null,bd=26/sc;if(RK.fix){best=L.find(o=>o.kind===RK.fix.kind&&String(o.id)===String(RK.fix.id));if(!best){const tp=targetPos(RK.fix);if(tp)best={kind:RK.fix.kind,id:RK.fix.id,x:tp.x,y:tp.y,name:tp.name,owner:tp.owner,far:1};else RK.fix=null}}
  if(!RK.fix)for(const o of L){const d=Math.hypot(o.x-RK.x,o.y-RK.y);if(d<bd){bd=d;best=o}}RK.lock=best;
@@ -1536,7 +1569,7 @@ function rkDraw(){if(!RK)return;const f=fleetById.get(RK.fid),cv2=$('rkCv');if(!
  for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){c.beginPath();c.moveTo(qx+a*(rr-5),qy+b*(rr-5));c.lineTo(qx+a*(rr+9),qy+b*(rr+9));c.stroke()}c.shadowBlur=0;
  if(best){c.fillStyle='#fecdd3';c.font='11px sans-serif';c.fillText((RK.fix?'🔒 ':'')+best.name,clamp(qx+rr+4,4,330),clamp(qy-rr,12,470))}
  const pk=f.rk[RK.pk]||f.rk[0],mul=1+tb('rdmg'),dist=best?Math.hypot(best.x-f.x,best.y-f.y):0;
- const info=best?`Ziel: <b class="text-rose-300">${best.name}</b> • ${best.kind==='planet'||best.kind==='rp'?'Planet':'Flotte'} • Distanz ${fmt(dist)} • Flugzeit ca. ${Math.round(dist/RK_V*1.15)} s${best.far?' <b class="text-amber-300">(außer Reichweite)</b>':''}${RK.fix?' • <b class="text-rose-300">fixiert</b>':''}<br>Salve: ${pk.n} Rakete(n) × ${fmt(pk.d*mul)} Schaden (Gegnerabwehr kann einzelne abfangen)`:'Fadenkreuz über ein Ziel ziehen/tippen, Doppelklick fixiert das Ziel. Reichweite: '+fmt(R);
+ const info=best?`Ziel: <b class="text-rose-300">${best.name}</b> • ${best.kind==='planet'||best.kind==='rp'?'Planet':best.kind==='mine'?'Mine (Klein = entschärfen, Mittel/Groß = zünden, Sprengradius '+MINE_R+')':'Flotte'} • Distanz ${fmt(dist)} • Flugzeit ca. ${Math.round(dist/RK_V*1.15)} s${best.far?' <b class="text-amber-300">(außer Reichweite)</b>':''}${RK.fix?' • <b class="text-rose-300">fixiert</b>':''}<br>Salve: ${pk.n} Rakete(n) × ${fmt(pk.d*mul)} Schaden (Gegnerabwehr kann einzelne abfangen)`:'Fadenkreuz über ein Ziel ziehen/tippen, Doppelklick fixiert das Ziel. Reichweite: '+fmt(R);
  setHtml($('rkUi'),`<div class="text-slate-300 mb-2">${info}</div><div class="flex flex-wrap gap-1 mb-2">${f.rk.map((p,i)=>btn(`${RKD[p.t].nm} ×${p.n} • ${fmt(p.d*mul)}`,`rkPick(${i})`,i===RK.pk?'amber':'slate')).join('')}</div><div class="flex justify-end gap-2">${btn(RK.fix?'Fixierung lösen':'Ziel fixieren','rkFixToggle()','amber',!best)}${btn('Schließen','closeRk()','slate')}${btn('<i class="fa-solid fa-bullseye"></i> Abschuss','rkFire()','rose',!best||best.far)}</div>`)}
 /* Button im Zielfenster */
 {const _rt=renderTarget;renderTarget=function(force){_rt(force);try{const a=$('targetActions');if(sel&&sel.type==='fleet'&&a){const f=fleetById.get(sel.id);const has=f&&f.owner===0&&f.rk&&f.rk.length&&f.placed;let b=$('rkTBtn');
@@ -1549,8 +1582,8 @@ function planetHit(p,d){const np=basePower(p.garrison);if(np>0){applyLoss([p.gar
 function rkFixToggle(){if(!RK)return;if(RK.fix){RK.fix=null;toast('Fixierung gelöst.')}else if(RK.lock){RK.fix={kind:RK.lock.kind,id:RK.lock.id};toast('Ziel fixiert – Doppelklick löst es wieder.')}}
 /* Bot-Schilde: bauen wenn bedroht (oder am Heimatplaneten), blockieren alle fremden Flotten */
 function aiXTick(g){_xa+=g;if(_xa<3)return;_xa=0;ensureX();
- for(let n=0;n<20;n++){const ai=AIS[_ap=(_ap+1)%AIS.length];if(!ai||ai.dead||ai.planets<2||ai.tech<2||Math.max(ai.bank||0,ai.dbank||0)<700)continue;
-  const mine=S.xs.filter(s=>s.o===ai.id);if(mine.length>=Math.min(3+ELV(ai)*3,1+Math.floor(ai.planets/2)))continue;if(ai.style!=='def'&&Math.random()<.5)continue;
+ for(let n=0;n<20;n++){const ai=AIS[_ap=(_ap+1)%AIS.length];if(!ai||ai.dead||ai.planets<2||ai.tech<2||unl(ai,'shield')<=0||Math.max(ai.bank||0,ai.dbank||0)<700)continue;
+  const mine=S.xs.filter(s=>s.o===ai.id);if(mine.length>=Math.max(1,Math.floor(Math.min(3+ELV(ai)*3,1+Math.floor(ai.planets/2))*unl(ai,'shield'))))continue;if(ai.style!=='def'&&Math.random()<.5)continue;
   const own=planets.filter(p=>p.owner===ai.id);let pick=null;
   for(const p of own){if(nearby(p.x,p.y,5000,e=>e.owner!==ai.id&&!e.dead&&(e.owner>0||e.placed)&&basePower(e.ships)>600).length){pick=p;break}}
   if(!pick)pick=(!mine.length&&planets[ai.home]&&planets[ai.home].owner===ai.id)?planets[ai.home]:(Math.random()<.5?own[Math.floor(Math.random()*own.length)]:null);
@@ -1665,6 +1698,97 @@ function xRkRows(f,ed){ensureX();const hR=S.lv.rocket_tech>0,hD=S.lv.rd_tech>0;i
  if(hR)for(const t of['S','M','L'])h+=row('fa-rocket','text-rose-400','Raketen '+RKD[t].nm,S.rst[t],rk.filter(p=>p.t===t).length,`rkUnT(${f.id},'${t}')`,`rkAssign(${f.id},'${t}')`);
  if(hD)h+=row('fa-shield-virus','text-sky-400','Raketenabwehr',S.rst.D,f.rd||0,`rdUnassign(${f.id})`,`rdAssign(${f.id})`);
  return h+`<div class="text-[10px] text-slate-500">Raketen-Slots ${rk.length}/${rkSlots()} • Abwehr-Slots ${f.rd||0}/${rdCap()}</div></div>`}
+
+/* ===== ADD-ON v3.6: Bot-Kriege (OpenFront-Stil) & Raketen gegen Minen ===== */
+(function(){
+const mineList=()=>[...(S.mines||[]).map(m=>({m,o:0,L:S.mines})),...(S.xm||[]).map(m=>({m,o:m.o,L:S.xm}))];
+function findMine(id){const a=(S.xm||[]).find(m=>m.id===id);if(a)return{m:a,o:a.o,L:S.xm};const b=(S.mines||[]).find(m=>m.id===id);if(b)return{m:b,o:0,L:S.mines};return null}
+const _tp=targetPos;
+targetPos=function(o){if(o&&o.kind==='mine'){const q=findMine(o.id);return q?{x:q.m.x,y:q.m.y,owner:q.o,name:q.o===0?'Eigene Mine':'Gegnerische Mine'}:null}return _tp(o)};
+/* Mine entschärfen (still entfernen) oder zünden (Sprengschaden + Kettenreaktion) */
+function blast(m,list,trigger,depth){const i=list.indexOf(m);if(i<0)return;list.splice(i,1);const nw=performance.now();
+ FX.push({k:'boom',t0:nw,dur:700,x1:m.x,y1:m.y,s:trigger?55:30,c:trigger?'#f59e0b':'#22d3ee'});
+ if(!trigger){FX.push({k:'wave',t0:nw,dur:500,x1:m.x,y1:m.y,s:120,c:'#22d3ee'});addLog('[MINE] Eine Mine wurde durch eine Rakete entschärft.',m.x,m.y);return}
+ FX.push({k:'wave',t0:nw,dur:800,x1:m.x,y1:m.y,s:MINE_R*1.2,c:'#f59e0b'});
+ const ai=m.o?AIS[m.o-1]:null,dmg=ai?MINE_D*(1+ai.tech*.03):MINE_D*(1+tb('mdmg'));
+ const hit=nearby(m.x,m.y,MINE_R*(ai?1:1+tb('mrad')),e=>!e.dead&&(e.owner>0||e.placed)&&basePower(e.ships)>0);
+ for(const f of hit)hitFleet(f,dmg,ai?1:1+tb('mgx'));
+ addLog('[MINE] Eine Mine wurde durch eine Rakete gezündet'+(hit.length?' ('+hit.length+' Flotte(n) getroffen)':'')+'!',m.x,m.y);playSound('boom');
+ if(depth<6)for(const q of mineList()){if(q.m!==m&&Math.hypot(q.m.x-m.x,q.m.y-m.y)<MINE_R*1.1)blast(q.m,q.L,true,depth+1)}}
+const _ri=rkImpact;
+rkImpact=function(r,t){if(r.t.kind==='mine'){const q=findMine(r.t.id);if(q)blast(q.m,q.L,r.d>=1200,0);refreshUI();return}return _ri(r,t)};
+const _ti=tryIntercept;
+tryIntercept=function(r,t){if(r.t.kind==='mine')return false;return _ti(r,t)};
+/* Bots beschießen Minen in ihrer Nähe mit ihren kleinsten Raketen */
+let _bm=0;const _bt0=botTick;
+botTick=function(g){_bt0(g);try{_bm+=g;if(_bm<5)return;_bm=0;
+ for(const f of fleets){if(f.owner<=0||f.dead||!f.rk||!f.rk.length||S.T<(f.fmn||0))continue;f.fmn=S.T+25+Math.random()*30;
+  let best=null,bd=2800;for(const q of mineList()){if(q.o===f.owner)continue;if(q.m.t0&&S.T<q.m.t0)continue;const d=Math.hypot(q.m.x-f.x,q.m.y-f.y);if(d<bd){bd=d;best=q}}
+  if(!best)continue;let pi=0;f.rk.forEach((p,i)=>{if(p.d<f.rk[pi].d)pi=i});
+  if(f.rk[pi].d>=1200&&bd<MINE_R*2.2)continue;fireRk(f,pi,{kind:'mine',id:best.m.id})}}catch(e){console.warn(e)}};
+/* Bots greifen Nachbarn an, wenn keine freien Planeten mehr erreichbar sind */
+function hunt(f){
+ if(f.owner<=0||f.dead||f.order||f.cool>0||S.T<150||!basePower(f.ships))return;
+ const ai=AIS[f.owner-1];if(!ai||ai.dead||S.T<(ai.huntAt||0)||fleetPower(f)<450)return;
+ ai.huntAt=S.T+(ai.style==='def'?70:25)+Math.random()*40;
+ const cx=cellX(f.x),cy=cellY(f.y),ag=aggrOf(ai),mayTake=S.T>=ai.capAt&&ai.planets<aiCap(ai);
+ if(mayTake)for(let dy=-7;dy<=7;dy++)for(let dx=-7;dx<=7;dx++){const p=planetAt(cx+dx,cy+dy);
+  if(p&&p.owner===-1&&Math.hypot(p.x-f.x,p.y-f.y)<=7*CELL&&estimate(f.ships,f.owner,defendersOf('planet',p)).aE>=estimate(f.ships,f.owner,defendersOf('planet',p)).dE*ag)return}
+ const c=[],R=11;
+ for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const p=planetAt(cx+dx,cy+dy);if(!p||p.owner<0||p.owner===f.owner)continue;
+  if(p.owner===0&&(S.T<300||(p.id===S.capital&&S.T<900)))continue;const d=Math.hypot(p.x-f.x,p.y-f.y);if(d<=R*CELL)c.push({kind:'planet',id:p.id,d})}
+ for(const g of nearby(f.x,f.y,AGGRO*2,g=>g.owner!==f.owner&&!g.dead&&basePower(g.ships)>0&&(g.owner>0||(g.placed&&S.T>=300&&fleetVis(g)>=.3))))c.push({kind:'fleet',id:g.id,d:Math.hypot(g.x-f.x,g.y-f.y)});
+ c.sort((a,b)=>a.d-b.d);let best=null,bs=1e18;
+ for(const t of c.slice(0,10)){const o=t.kind==='planet'?planets[t.id]:fleetById.get(t.id);if(!o)continue;
+  const e=estimate(f.ships,f.owner,defendersOf(t.kind,o));if(e.aE<e.dE*ag*1.1)continue;const sc=t.d+e.dE*2;if(sc<bs){bs=sc;best=t}}
+ if(best){setAttack(f,best.kind,best.id);checkWarn(f)}}
+const _th=think;
+think=function(f){_th(f);try{hunt(f)}catch(e){console.warn(e)}};
+})();
+
+/* ===== ADD-ON v3.7: Rache & mehrfache Sofort-Angriffsmeldungen ===== */
+function grudgeVal(ai,o){const r=ai.rev&&ai.rev[o];return r?r.v*Math.exp(-(S.T-r.t)/1200):0}
+function grudgeAdd(ai,o,w){ai.rev=ai.rev||{};ai.rev[o]={v:Math.min(6,grudgeVal(ai,o)+w),t:S.T}}
+{const _r=resolveAttack;resolveAttack=function(f){let to=-9;const a=f.owner;
+ try{const o=f.order;if(o&&o.type==='atk'){const t=targetPos(o);if(t)to=t.owner}}catch(e){}
+ const r=_r(f);
+ if(to>0&&to!==a){const ai=AIS[to-1];if(ai&&!ai.dead)grudgeAdd(ai,a,ai.pers==='rusher'?1.5:ai.pers==='turtle'?.7:1)}
+ return r}}
+function aiRevenge(f,ai){if(!ai||!ai.rev||S.T<(ai.revAt||0)||fleetPower(f)<450)return null;
+ let en=-9,bv=.99;for(const k in ai.rev){const o=+k;if(o>0&&AIS[o-1]&&AIS[o-1].dead){delete ai.rev[k];continue}const v=grudgeVal(ai,o);if(v>bv){bv=v;en=o}}
+ if(en<0)return null;ai.revAt=S.T+15+Math.random()*25;
+ if(en===0&&S.T<420)return null;
+ const cx=cellX(f.x),cy=cellY(f.y),R=12,ag=aggrOf(ai)*Math.max(.55,1-.1*bv);let best=null,bsc=1e18;
+ for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const p=planetAt(cx+dx,cy+dy);if(!p||p.owner!==en)continue;
+  if(en===0&&p.id===S.capital&&S.T<900)continue;
+  const e=estimate(f.ships,f.owner,defendersOf('planet',p));if(e.aE<e.dE*ag)continue;
+  const sc=Math.hypot(p.x-f.x,p.y-f.y)+e.dE*2;if(sc<bsc){bsc=sc;best={kind:'planet',id:p.id}}}
+ return best}
+/* Mehrere gleichzeitige Warnungen (gestapelt) */
+const ALS=[];let _alBox=null;
+function alBox(){if(_alBox)return _alBox;const b=document.createElement('div');b.id='alertStack';
+ b.style.cssText='position:absolute;top:calc(var(--hh,90px) + 48px);left:50%;transform:translateX(-50%);width:min(92vw,28rem);z-index:30;display:flex;flex-direction:column;gap:4px;pointer-events:none';
+ const ban=$('alertBanner');(ban&&ban.parentNode||document.body).appendChild(b);return _alBox=b}
+function alRemove(a){const i=ALS.indexOf(a);if(i>=0)ALS.splice(i,1);alRender()}
+function alRender(){const now=S.T;
+ for(let i=ALS.length-1;i>=0;i--){const a=ALS[i],m=a.meta;
+  if(m){const att=fleetById.get(m.aid);if(m.kind==='fleet'){const tp=fleetById.get(m.id);if(tp&&!tp.dead){a.x=tp.x;a.y=tp.y}}
+   if(!att||att.dead||!att.order||att.order.type!=='atk'||att.order.id!==m.id||now-a.t>900)ALS.splice(i,1)}
+  else if(now-a.t>25)ALS.splice(i,1)}
+ const box=alBox();box.textContent='';
+ ALS.slice(-5).reverse().forEach(a=>{const d=document.createElement('div');
+  d.className='glass-panel-rose rounded-lg border border-rose-500/60 px-3 py-1.5 flex items-center justify-between shadow-2xl cursor-pointer';d.style.pointerEvents='auto';
+  d.onclick=()=>jumpTo(a.x,a.y);
+  const l=document.createElement('div');l.className='text-xs text-slate-200';l.textContent=(a.meta?'⚠ ':'ℹ ')+a.text;d.appendChild(l);
+  if(a.meta){const b=document.createElement('button');b.className='px-2 py-1 rounded bg-rose-700 hover:bg-rose-600 text-white text-[11px] whitespace-nowrap ml-2';b.textContent='Rückzug';
+   b.onclick=e=>{e.stopPropagation();lastAlert=a;doRetreat();alRemove(a)};d.appendChild(b)}
+  const x=document.createElement('button');x.className='text-rose-400 text-sm ml-2';x.textContent='✕';x.onclick=e=>{e.stopPropagation();alRemove(a)};d.appendChild(x);box.appendChild(d)});
+ if(ALS.length>5){const m=document.createElement('div');m.className='text-[11px] text-rose-300 text-center';m.textContent='+'+(ALS.length-5)+' weitere Warnungen';box.appendChild(m)}}
+pushAlert=function(text,x,y,meta){const key=meta?'a'+meta.aid+':'+meta.kind+':'+meta.id:'i'+text;let a=ALS.find(q=>q.key===key),fresh=!a;
+ if(!a){a={key};ALS.push(a)}Object.assign(a,{text,x,y,meta,t:S.T});lastAlert=a;
+ if(fresh){playSound('alert');addLog('[ALARM] '+text,x,y)}
+ $('alertBanner').classList.add('hidden');alRender()};
+setInterval(()=>{try{if(ALS.length)alRender()}catch(e){}},1000);
 </script>
 </body>
 </html>
