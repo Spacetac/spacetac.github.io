@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Spacetac - tactical wargame</title>
+<meta name="theme-color" content="#020617"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<title>Galaxy Empire - Deep Space Strategy</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
@@ -50,6 +51,44 @@ header{padding-top:max(.5rem,env(safe-area-inset-top))}
  table{font-size:11px}
 }
 
+
+/* ===== MOBILE/TOUCH-OPTIMIERUNG ===== */
+html,body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none;touch-action:manipulation;-webkit-touch-callout:none}
+#galaxyCanvas,#minimap{touch-action:none}
+header,#mainNav{padding-left:max(.5rem,env(safe-area-inset-left));padding-right:max(.5rem,env(safe-area-inset-right))}
+#minimap{left:max(.5rem,env(safe-area-inset-left))!important}
+#modalBody,#modal2Body,#targetPanel,#logPanel,#resPop{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#zoomCtl{display:none;position:absolute;right:max(.5rem,env(safe-area-inset-right));bottom:calc(66px + env(safe-area-inset-bottom));z-index:15;flex-direction:column;gap:8px}
+#zoomCtl button{width:46px;height:46px;border-radius:12px;background:rgba(10,15,30,.88);border:1px solid rgba(56,189,248,.4);color:#7dd3fc;font:700 22px/1 Orbitron,sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.5)}
+#zoomCtl button:active{background:rgba(8,145,178,.55);border-color:#22d3ee}
+@media(pointer:coarse){
+ #zoomCtl{display:flex}
+ #targetPanel:not(.hidden)~#zoomCtl{display:none}
+ .nb{min-height:44px;padding:.55rem .9rem;font-size:12px}
+ header button{min-width:40px;min-height:40px}
+ #modalRoot button,#modal2Root button,#targetPanel button,#resPop button,#alertBanner button,#hintBar button{min-height:40px}
+ [onclick^="closeModal"],[onclick^="closeTarget"],#hintBar button:last-child{min-width:44px;min-height:44px}
+ #modalRoot input:not([type=range]):not([type=checkbox]):not([type=radio]),#modal2Root input:not([type=range]):not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px!important;min-height:40px}
+ input[type=range]{min-height:32px}
+ #modalRoot>div,#modal2Root>div{max-height:calc(100dvh - 1rem)!important}
+ .resItem{padding:6px 8px}
+ #modalBody tr{min-height:40px}
+}
+@media(pointer:coarse) and (max-height:480px){
+ header{padding-top:max(.25rem,env(safe-area-inset-top))!important;padding-bottom:.25rem!important;gap:.25rem}
+ #hdrTitle{display:none}
+ #mainNav{padding-top:.25rem!important;padding-bottom:max(.25rem,env(safe-area-inset-bottom))!important}
+ .nb{min-height:38px;padding:.3rem .7rem}
+ #minimap{width:80px!important;height:80px!important;bottom:calc(50px + env(safe-area-inset-bottom))!important}
+ #zoomCtl{bottom:calc(52px + env(safe-area-inset-bottom));flex-direction:row}
+ #zoomCtl button{width:42px;height:42px}
+ #logPanel{bottom:calc(50px + env(safe-area-inset-bottom))!important;height:40vh!important;left:calc(96px + env(safe-area-inset-left))!important}
+ #targetPanel{top:calc(var(--hh,50px) + 6px)!important;max-height:calc(100dvh - var(--hh,50px) - 64px)!important;width:300px}
+ #modalRoot,#modal2Root{padding:0!important}
+ #modalRoot>div,#modal2Root>div{max-width:none!important;width:100%;height:100dvh;max-height:100dvh!important;border-radius:0!important}
+ #modalBody,#modal2Body{padding-bottom:max(1rem,env(safe-area-inset-bottom))}
+ #hintBar{padding:.2rem .6rem}
+}
 </style>
 </head>
 <body class="h-full w-full relative bg-black text-slate-100 flex flex-col justify-between">
@@ -113,6 +152,7 @@ header{padding-top:max(.5rem,env(safe-area-inset-top))}
 </nav>
 <style>.nb{padding:.4rem .8rem;border-radius:.4rem;background:rgba(15,23,42,.9);border:1px solid rgba(56,189,248,.3);color:#7dd3fc;font-family:Orbitron,sans-serif;font-size:11px}.nb:hover{background:rgba(8,47,73,.8);border-color:#22d3ee}</style>
 
+<div id="zoomCtl"><button id="zoomIn" aria-label="Hineinzoomen" title="Hineinzoomen">+</button><button id="zoomOut" aria-label="Herauszoomen" title="Herauszoomen">&minus;</button></div>
 <div id="fxFlash"></div><div id="tipBox"></div><div id="resPop" class="hidden glass-panel rounded-xl p-3 text-xs"></div>
 <div id="modalRoot" class="hidden fixed inset-0 z-40 bg-black/60 flex items-center justify-center p-2 md:p-6" onclick="if(event.target===this)closeModal()">
   <div class="glass-panel rounded-xl w-full max-w-6xl max-h-full flex flex-col" style="max-height:92vh">
@@ -545,22 +585,22 @@ function resize(){dpr=Math.min(2,window.devicePixelRatio||1);W=window.innerWidth
 window.addEventListener('resize',resize);
 const w2s=(x,y)=>[(x-cam.x)*cam.zoom+W/2,(y-cam.y)*cam.zoom+H/2];
 const s2w=(x,y)=>[(x-W/2)/cam.zoom+cam.x,(y-H/2)/cam.zoom+cam.y];
-const ptrs=new Map();let drag=null,lastTap={t:0,x:0,y:0},pinchD=0,mouse={x:0,y:0};
+let PICKR=16;const ptrs=new Map();let drag=null,lastTap={t:0,x:0,y:0},pinchD=0,mouse={x:0,y:0};
 function clampCam(){cam.x=clamp(cam.x,-HALF,HALF);cam.y=clamp(cam.y,-HALF,HALF)}
-cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});drag={moved:false,sx:e.clientX,sy:e.clientY};
+cv.addEventListener('pointerdown',e=>{PICKR=e.pointerType==='touch'?28:16;try{cv.setPointerCapture(e.pointerId)}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});drag={moved:false,sx:e.clientX,sy:e.clientY};
  if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinchD=Math.hypot(a.x-b.x,a.y-b.y);drag.moved=true}});
 cv.addEventListener('pointermove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
  if(ptrs.size===2){const [a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(pinchD>0)zoomAt((a.x+b.x)/2,(a.y+b.y)/2,d/pinchD);pinchD=d;return}
- if(drag){if(!drag.moved&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>5)drag.moved=true;if(drag.moved){cam.x-=dx/cam.zoom;cam.y-=dy/cam.zoom;clampCam()}}});
+ if(drag){if(!drag.moved&&Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>(e.pointerType==='touch'?10:5))drag.moved=true;if(drag.moved){cam.x-=dx/cam.zoom;cam.y-=dy/cam.zoom;clampCam()}}});
 const endPtr=e=>{const was=ptrs.size;ptrs.delete(e.pointerId);if(drag&&!drag.moved&&was===1&&e.type==='pointerup')onTap(e.clientX,e.clientY);if(!ptrs.size){drag=null;pinchD=0}};
 cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
 function zoomAt(sx,sy,f){const [wx,wy]=s2w(sx,sy);cam.zoom=clamp(cam.zoom*f,MINZ,MAXZ);cam.x=wx-(sx-W/2)/cam.zoom;cam.y=wy-(sy-H/2)/cam.zoom;clampCam()}
 cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,e.deltaY<0?1.15:.87)},{passive:false});
-function onTap(x,y){const now=performance.now();if(now-lastTap.t<350&&Math.hypot(x-lastTap.x,y-lastTap.y)<24){lastTap.t=0;onDouble(x,y)}else{lastTap={t:now,x,y};onClick(x,y)}}
+function onTap(x,y){const now=performance.now();if(now-lastTap.t<350&&Math.hypot(x-lastTap.x,y-lastTap.y)<(PICKR>16?40:24)){lastTap.t=0;onDouble(x,y)}else{lastTap={t:now,x,y};onClick(x,y)}}
 function pickAt(sx,sy){const [wx,wy]=s2w(sx,sy),z=cam.zoom;let best=null,bd=1e9;
- for(const f of fleets){if(f.dead||(f.owner===0&&!f.placed)||fleetVis(f)<.5)continue;const d=Math.hypot(f.x-wx,f.y-wy)*z;if(d<16&&d<bd){bd=d;best={type:'fleet',id:f.id}}}
+ for(const f of fleets){if(f.dead||(f.owner===0&&!f.placed)||fleetVis(f)<.5)continue;const d=Math.hypot(f.x-wx,f.y-wy)*z;if(d<PICKR&&d<bd){bd=d;best={type:'fleet',id:f.id}}}
  if(best)return best;const cx=cellX(wx),cy=cellY(wy);
- for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const p=planetAt(cx+dx,cy+dy);if(!p)continue;const d=Math.hypot(p.x-wx,p.y-wy);if(d<=Math.max(p.r,16/z)&&d<bd){bd=d;best={type:'planet',id:p.id}}}
+ for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const p=planetAt(cx+dx,cy+dy);if(!p)continue;const d=Math.hypot(p.x-wx,p.y-wy);if(d<=Math.max(p.r,PICKR/z)&&d<bd){bd=d;best={type:'planet',id:p.id}}}
  return best}
 function onClick(x,y){const o=pickAt(x,y);if(o){sel=o;if(o.type==='fleet'){const f=fleetById.get(o.id);if(f&&f.owner===0)setActive(f.id)}playSound('click');renderTarget(true)}else{closeTarget();if(S.tapMove&&activeFleet)onDouble(x,y)}}
 function onDouble(x,y){if(placing){placeDef(x,y);return}const f=activeFleet?fleetById.get(activeFleet):null;
@@ -1789,6 +1829,30 @@ pushAlert=function(text,x,y,meta){const key=meta?'a'+meta.aid+':'+meta.kind+':'+
  if(fresh){playSound('alert');addLog('[ALARM] '+text,x,y)}
  $('alertBanner').classList.add('hidden');alRender()};
 setInterval(()=>{try{if(ALS.length)alRender()}catch(e){}},1000);
+</script>
+<script>
+/* Mobile/Touch-Zusatz: Zoom-Tasten, Minikarten-Wischen, Rotation, iOS-Gesten */
+(function(){
+ const g=id=>document.getElementById(id);
+ const lv=()=>{try{layoutVars()}catch(_){}};
+ const rs=()=>{try{resize()}catch(_){}lv()};
+ window.addEventListener('orientationchange',()=>{setTimeout(rs,150);setTimeout(rs,500)});
+ if(window.visualViewport)window.visualViewport.addEventListener('resize',rs);
+ window.addEventListener('resize',lv);setTimeout(lv,300);
+ const zin=g('zoomIn'),zout=g('zoomOut');
+ const zoom=f=>{try{zoomAt(W/2,H/2,f);playSound('click')}catch(_){}};
+ let zt=null;const hold=(b,f)=>{
+  b.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();zoom(f);clearInterval(zt);zt=setInterval(()=>{try{zoomAt(W/2,H/2,f>1?1.06:.945)}catch(_){}},60)});
+  ['pointerup','pointercancel','pointerleave'].forEach(t=>b.addEventListener(t,()=>clearInterval(zt)))};
+ if(zin&&zout){hold(zin,1.3);hold(zout,1/1.3)}
+ const mm=g('minimap');let mmD=false;
+ const mmMove=e=>{const r=mm.getBoundingClientRect();cam.x=clamp(((e.clientX-r.left)/r.width-.5)*WORLD,-HALF,HALF);cam.y=clamp(((e.clientY-r.top)/r.height-.5)*WORLD,-HALF,HALF)};
+ mm.addEventListener('pointerdown',e=>{mmD=true;try{mm.setPointerCapture(e.pointerId)}catch(_){}});
+ mm.addEventListener('pointermove',e=>{if(mmD){mmMove(e);e.preventDefault()}});
+ ['pointerup','pointercancel'].forEach(t=>mm.addEventListener(t,()=>{mmD=false}));
+ ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault()));
+ cv.addEventListener('contextmenu',e=>e.preventDefault());
+})();
 </script>
 </body>
 </html>
