@@ -143,6 +143,23 @@ html{-webkit-text-size-adjust:100%}
  #speedBtn{font-size:12px!important}
 }
 @media (pointer:coarse) and (orientation:landscape) and (min-width:641px){#menuBtn{display:none!important}}
+
+/* ===== v3.8.1: einheitliche Schiffszeilen, Menü-Umbau ===== */
+.shipctl{display:inline-flex;align-items:center;gap:4px}
+@media (max-width:640px),(pointer:coarse){
+ #modalBody .shiprow{flex-direction:column!important;align-items:stretch!important;flex-wrap:nowrap!important;gap:4px!important;margin-bottom:10px}
+ #modalBody .shipctl{display:grid!important;grid-template-columns:1.2fr 1fr 1fr 1fr 1.2fr;gap:4px;width:100%}
+ #modalBody .shipctl2{grid-template-columns:1fr 1fr 1fr}
+ #modalBody .shipctl b{width:auto!important;text-align:center}
+ #modalBody .shipctl button{width:100%;padding-left:0;padding-right:0}
+}
+@media (max-width:640px),(pointer:coarse) and (orientation:portrait){
+ header button[onclick*="'search'"]{display:flex!important;align-items:center;justify-content:center}
+ header button[onclick*="'daily'"]{display:none!important}
+}
+@media (pointer:coarse) and (orientation:landscape) and (min-width:641px){header button[onclick*="'daily'"]{display:inline-block!important;display:flex!important}}
+#hdrMenu button{position:relative}
+.mdot{position:absolute;top:4px;right:6px;width:9px;height:9px;border-radius:9999px;background:#f43f5e}
 </style>
 </head>
 <body class="h-full w-full relative bg-black text-slate-100 flex flex-col justify-between">
@@ -162,11 +179,11 @@ html{-webkit-text-size-adjust:100%}
   <div class="flex items-center gap-1.5">
     <button onclick="goHome()" id="homeBtn" title="Zum Heimatplaneten springen" class="p-2 bg-slate-900 border border-slate-700 hover:border-amber-400 rounded text-amber-300"><i class="fa-solid fa-house"></i></button>
     <button onclick="toggleReports()" id="repBtn" title="Kampfberichte ein-/ausschalten" class="p-2 bg-slate-900 border border-slate-700 hover:border-rose-400 rounded text-rose-300"><i class="fa-solid fa-file-lines"></i></button>
-    <button onclick="cycleSpeed()" id="speedBtn" title="Spielgeschwindigkeit 1x / 2x / 4x – beschleunigt Produktion, Forschung und Flotten (Klick = wechseln)" class="px-2 py-1.5 bg-slate-900 border border-slate-700 hover:border-cyan-400 rounded text-cyan-300 text-xs font-orbitron">1x</button>
+    <button onclick="cycleSpeed()" id="speedBtn" title="Spielgeschwindigkeit 1x / 2x / 4x / 10x – beschleunigt Produktion, Forschung und Flotten (Klick = wechseln)" class="px-2 py-1.5 bg-slate-900 border border-slate-700 hover:border-cyan-400 rounded text-cyan-300 text-xs font-orbitron">1x</button>
     <button onclick="openModal('search')" title="Suche: Planeten und Flotten finden" class="p-2 bg-slate-900 border border-slate-700 hover:border-cyan-400 rounded text-cyan-400"><i class="fa-solid fa-magnifying-glass"></i></button>
     <button onclick="openModal('rank')" title="Galaxie-Rangliste: du gegen alle KI-Imperien" class="p-2 bg-slate-900 border border-slate-700 hover:border-amber-400 rounded text-amber-400"><i class="fa-solid fa-ranking-star"></i></button>
     <button onclick="toggleAudio()" id="audioBtn" title="Ton an/aus" class="p-2 bg-slate-900 border border-slate-700 rounded text-slate-300"><i class="fa-solid fa-volume-high"></i></button>
-    <button onclick="openModal('daily')" title="Tagesbelohnung abholen (Tokens, Credits, Rohstoffe)" class="p-2 bg-slate-900 border border-slate-700 hover:border-emerald-400 rounded text-emerald-400 relative"><i class="fa-solid fa-gift"></i><span id="dailyDot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500"></span></button><button onclick="openModal('profile')" title="Profil &amp; Spielstand" class="p-2 bg-slate-900 border border-slate-700 hover:border-sky-400 rounded text-sky-300"><i class="fa-solid fa-user-astronaut"></i></button><button onclick="openModal('help')" title="Hilfe" class="p-2 bg-slate-900 border border-slate-700 rounded text-slate-300"><i class="fa-solid fa-circle-question"></i></button><button onclick="toggleHdrMenu(event)" id="menuBtn" title="Mehr" class="p-2 bg-slate-900 border border-slate-700 rounded text-cyan-300"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+    <button onclick="openModal('daily')" title="Tagesbelohnung abholen (Tokens, Credits, Rohstoffe)" class="p-2 bg-slate-900 border border-slate-700 hover:border-emerald-400 rounded text-emerald-400 relative"><i class="fa-solid fa-gift"></i><span id="dailyDot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500"></span></button><button onclick="openModal('profile')" title="Profil &amp; Spielstand" class="p-2 bg-slate-900 border border-slate-700 hover:border-sky-400 rounded text-sky-300"><i class="fa-solid fa-user-astronaut"></i></button><button onclick="openModal('help')" title="Hilfe" class="p-2 bg-slate-900 border border-slate-700 rounded text-slate-300"><i class="fa-solid fa-circle-question"></i></button><button onclick="toggleHdrMenu(event)" id="menuBtn" title="Mehr" class="p-2 bg-slate-900 border border-slate-700 rounded text-cyan-300 relative"><i class="fa-solid fa-ellipsis-vertical"></i><span id="menuDot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500"></span></button>
   </div>
 </header>
 
@@ -204,15 +221,15 @@ html{-webkit-text-size-adjust:100%}
   <button onclick="openModal('research')" title="Forschung: Waffen, Antrieb, Wirtschaft … (eine gleichzeitig)" class="nb"><i class="fa-solid fa-flask"></i> Forschung</button>
   <button onclick="openModal('trade')" title="Handel: Rohstoffe kaufen und verkaufen" class="nb"><i class="fa-solid fa-scale-balanced"></i> Handel</button>
   <button onclick="openModal('empire')" title="Imperium: Kolonien, Förderanlagen, Kraftwerke &amp; mehr" class="nb"><i class="fa-solid fa-globe"></i> Imperium</button>
-  <button onclick="openModal('gacha')" title="Gacha: Warp-Tokens gegen Superschiffe und Pakete tauschen" class="nb" style="color:#fbbf24;border-color:rgba(251,191,36,.5)"><i class="fa-solid fa-dice"></i> Gacha</button><button onclick="toggleLog()" title="Ereignis-Log ein-/ausblenden" class="nb"><i class="fa-solid fa-scroll"></i> Log</button>
+  <button onclick="openModal('gacha')" title="Schiffe anheuern: Warp-Tokens gegen Superschiffe und Pakete tauschen" class="nb" style="color:#fbbf24;border-color:rgba(251,191,36,.5)"><i class="fa-solid fa-user-plus"></i> Heuern</button><button onclick="toggleLog()" title="Ereignis-Log ein-/ausblenden" class="nb"><i class="fa-solid fa-scroll"></i> Log</button>
 </nav>
 <style>.nb{padding:.4rem .8rem;border-radius:.4rem;background:rgba(15,23,42,.9);border:1px solid rgba(56,189,248,.3);color:#7dd3fc;font-family:Orbitron,sans-serif;font-size:11px}.nb:hover{background:rgba(8,47,73,.8);border-color:#22d3ee}</style>
 
 <div id="zoomCtl"><button id="zoomIn" aria-label="Hineinzoomen" title="Hineinzoomen">+</button><button id="zoomOut" aria-label="Herauszoomen" title="Herauszoomen">&minus;</button></div>
-<div id="sideL" class="sideCol"><button class="sb" onclick="openModal('trade')" title="Handel"><i class="fa-solid fa-scale-balanced"></i><span>Handel</span></button><button class="sb" onclick="openModal('gacha')" title="Gacha" style="color:#fbbf24;border-color:rgba(251,191,36,.5)"><i class="fa-solid fa-dice"></i><span>Gacha</span></button></div>
+<div id="sideL" class="sideCol"><button class="sb" onclick="openModal('trade')" title="Handel"><i class="fa-solid fa-scale-balanced"></i><span>Handel</span></button><button class="sb" onclick="openModal('gacha')" title="Schiffe anheuern" style="color:#fbbf24;border-color:rgba(251,191,36,.5)"><i class="fa-solid fa-user-plus"></i><span>Heuern</span></button></div>
 <div id="sideR" class="sideCol"><button class="sb" onclick="toggleLog()" title="Ereignis-Log"><i class="fa-solid fa-scroll"></i><span>Log</span></button></div>
 <div id="hdrMenu" class="hidden glass-panel rounded-xl p-2 grid grid-cols-2 gap-2">
-  <button onclick="hdrAct('search')"><i class="fa-solid fa-magnifying-glass text-cyan-400"></i> Suche</button>
+  <button onclick="hdrAct('daily')"><i class="fa-solid fa-gift text-emerald-400"></i> Tagesbelohnung<span id="mDot" class="mdot hidden"></span></button>
   <button onclick="hdrAct('rank')"><i class="fa-solid fa-ranking-star text-amber-400"></i> Rangliste</button>
   <button onclick="hdrAct('profile')"><i class="fa-solid fa-user-astronaut text-sky-300"></i> Profil</button>
   <button onclick="hdrAct('help')"><i class="fa-solid fa-circle-question text-slate-300"></i> Hilfe</button>
@@ -294,10 +311,10 @@ const TIERMAX=SHIPS.length-1;
 /* --- Gacha-Superschiffe (20) --- */
 const RAR={C:{n:'Gewöhnlich',c:'#94a3b8'},U:{n:'Ungewöhnlich',c:'#f472b6'},R:{n:'Selten',c:'#38bdf8'},E:{n:'Episch',c:'#c084fc'},L:{n:'Legendär',c:'#fbbf24'},M:{n:'Mythisch',c:'#00ff66'}};
 const SDEF={
- R:{p0:18000,dp:500,spd:70,pw:30,n:['Nebel-Läufer','Schatten-Jäger','Ionen-Falke','Frost-Wächter','Sturm-Harpune','Nova-Lanze','Eisen-Aegis','Kometen-Sichel'],i:['fa-ghost','fa-user-ninja','fa-bolt','fa-snowflake','fa-hurricane','fa-burst','fa-shield-halved','fa-meteor']},
- E:{p0:27000,dp:1200,spd:62,pw:40,n:['Quanten-Phantom','Sonnenschmied','Hurrikan-Titan','Dunkelstern-Lancer','Singularitäts-Wächter','Plasma-Drache'],i:['fa-atom','fa-sun','fa-hurricane','fa-moon','fa-shield-halved','fa-dragon']},
- L:{p0:38000,dp:2000,spd:55,pw:55,n:['Aeon-Richter','Void-Leviathan','Supernova-Herold','Chrono-Tyrann','Stern-Verschlinger'],i:['fa-gavel','fa-skull','fa-explosion','fa-hourglass-half','fa-biohazard']},
- M:{p0:500000,dp:0,spd:45,pw:100,n:['Grim Reaper'],i:['fa-star']}};
+ R:{p0:9000,dp:400,spd:70,pw:30,n:['Nebel-Läufer','Schatten-Jäger','Ionen-Falke','Frost-Wächter','Sturm-Harpune','Nova-Lanze','Eisen-Aegis','Kometen-Sichel'],i:['fa-ghost','fa-user-ninja','fa-bolt','fa-snowflake','fa-hurricane','fa-burst','fa-shield-halved','fa-meteor']},
+ E:{p0:16000,dp:800,spd:62,pw:40,n:['Quanten-Phantom','Sonnenschmied','Hurrikan-Titan','Dunkelstern-Lancer','Singularitäts-Wächter','Plasma-Drache'],i:['fa-atom','fa-sun','fa-hurricane','fa-moon','fa-shield-halved','fa-dragon']},
+ L:{p0:26000,dp:1500,spd:55,pw:55,n:['Aeon-Richter','Void-Leviathan','Supernova-Herold','Chrono-Tyrann','Stern-Verschlinger'],i:['fa-gavel','fa-skull','fa-explosion','fa-hourglass-half','fa-biohazard']},
+ M:{p0:200000,dp:0,spd:45,pw:100,n:['Grim Reaper'],i:['fa-star']}};
 for(const t of ['R','E','L','M']){const d=SDEF[t];d.n.forEach((nm,k)=>SHIPS.push({id:'sx_'+t+k,name:nm,power:d.p0+d.dp*k,cost:{},spd:d.spd,pw:d.pw,icon:d.i[k],g:1,r:t}))}
 const SHIP={};SHIPS.forEach(s=>SHIP[s.id]=s);
 const TREES={weapons:{n:'Waffen',i:'fa-burst',c:'text-rose-400'},defense:{n:'Verteidigung',i:'fa-shield-halved',c:'text-sky-400'},prop:{n:'Antrieb',i:'fa-rocket',c:'text-amber-400'},eco:{n:'Wirtschaft',i:'fa-coins',c:'text-emerald-400'},ind:{n:'Schiffbau',i:'fa-industry',c:'text-orange-400'},cmd:{n:'Kommando',i:'fa-satellite-dish',c:'text-purple-400'},sci:{n:'Wissenschaft',i:'fa-atom',c:'text-sky-300'},spec:{n:'Exotisch',i:'fa-radiation',c:'text-fuchsia-400'}};
@@ -503,9 +520,9 @@ function estimate(ships,ao,info){const am=mods(ao),dm=mods(info.owner);
  return{aE,dE:dB*(1+dm.atk)*(1+dm.arm)+info.turret*(1-am.tdis)}}
 function applyLoss(dicts,frac){const tally={};for(const d of dicts)for(const t of Object.keys(d)){const n=d[t];const lost=frac>=1?n:Math.min(n,Math.floor(n*frac+Math.random()));
  if(lost>0){tally[t]=(tally[t]||0)+lost;d[t]=n-lost;if(d[t]<=0)delete d[t]}}return tally}
-function lossFrac(ratio){return Math.min(.95,.88*Math.pow(clamp(ratio,0,1),1.5))}
+function lossFrac(ratio){return Math.min(.95,.06+.82*Math.pow(clamp(ratio,0,1),1.25))}
 function fight(f,info){const {aE,dE}=estimate(f.ships,f.owner,info);
- const a=aE*(.92+Math.random()*.16),d=dE*(.92+Math.random()*.16),win=a>d,am=mods(f.owner),dm=mods(info.owner);
+ const a=aE*(.85+Math.random()*.30),d=dE*(.85+Math.random()*.30),win=a>d,am=mods(f.owner),dm=mods(info.owner);
  const L=win?lossFrac(d/a):lossFrac(a/d);
  const attFrac=win?L*(1-am.rep):1,defFrac=win?1:L*(1-dm.rep);
  return{win,aE,dE,attFrac,defFrac,attLost:applyLoss([f.ships],attFrac),defLost:applyLoss(info.dicts,defFrac)}}
@@ -536,7 +553,7 @@ function resolveAttack(f){
   else{captured=true;const prev=tgt.owner;
    if(f.owner===0){tgt.garrison={};tgt.b={mine:1,power:0,turret:0,lab:0,hub:0,yard:0}}
    else{tgt.garrison=genShips(40+Math.random()*80,Math.min(TIERMAX,2+Math.floor(AIS[f.owner-1].tech/3)),Math.random);tgt.b={mine:0,power:0,turret:prev===0?1:Math.min(tgt.b.turret,2),lab:0,hub:0,yard:0}}
-   setOwner(tgt,f.owner);f.ax=tgt.x;f.ay=tgt.y;if(f.owner===0&&basePower(f.ships))f.order={type:'move',x:tgt.x,y:tgt.y};if(f.owner>0)AIS[f.owner-1].capAt=S.T+((prev===-1?(2+Math.random()*5+(1-RUSH())*(100+Math.random()*150)):150+Math.random()*250)*(1-.9*SNOW(AIS[f.owner-1])))}}
+   setOwner(tgt,f.owner);{const off=(tgt.r||20)*1.4+22;let dx=f.x-tgt.x,dy=f.y-tgt.y,dd=Math.hypot(dx,dy);if(dd<1){const an=Math.random()*6.283;dx=Math.cos(an);dy=Math.sin(an);dd=1}f.ax=tgt.x+dx/dd*off;f.ay=tgt.y+dy/dd*off}if(f.owner===0&&basePower(f.ships))f.order={type:'move',x:f.ax,y:f.ay};if(f.owner>0)AIS[f.owner-1].capAt=S.T+.75*((prev===-1?(2+Math.random()*5+(1-RUSH())*(100+Math.random()*150)):150+Math.random()*250)*(1-.9*SNOW(AIS[f.owner-1])))}}
  const left=Object.assign({},f.ships),attDead=!basePower(f.ships);if(attDead)removeFleet(f);
  const win=r.win;
  if(f.owner===0||defOwner===0){
@@ -551,34 +568,35 @@ function setAttack(f,kind,id){f.order={type:'atk',kind,id}}
 
 /* ===== KI ===== */
 const RUSH=()=>Math.max(0,Math.min(1,1-(S.T-600)/1800));
-const SNOW_START=25000,SNOW_RAMP=40000,SNOW_MAXPL=40;
+const SNOW_START=60000,SNOW_RAMP=80000,SNOW_MAXPL=40;
 let _snId=0,_snAt=-1;
 function snowLeader(){if(S.T<_snAt)return _snId;_snAt=S.T+120;let b=0,id=0;for(const a of AIS)if(!a.dead&&a.planets>b){b=a.planets;id=a.id}_snId=id;return id}
 const SNOWK=()=>S.T<SNOW_START?0:Math.min(1,(S.T-SNOW_START)/SNOW_RAMP)*Math.max(0,1-PS.size/SNOW_MAXPL);
 const SNOW=ai=>{const k=SNOWK();return k>0&&ai.id===snowLeader()?k:0};
 function aiGachaShip(ai){const T=S.T,sk=ai.skill,pool=[];
- if(T>900&&sk>.35)pool.push('R');if(T>2400&&sk>.5)pool.push('E');if(T>5000&&sk>.7)pool.push('L');
- if(!pool.length)return null;const t=pool[Math.floor(Math.pow(Math.random(),1.6)*pool.length)],l=SHIPS.filter(s=>s.g&&s.r===t);return l[Math.floor(Math.random()*l.length)].id}
+ if(T>600&&sk>.25)pool.push('R');if(T>1800&&sk>.4)pool.push('E');if(T>3800&&sk>.6)pool.push('L');
+ if(!pool.length)return null;const t=pool[Math.floor(Math.pow(Math.random(),1.2)*pool.length)],l=SHIPS.filter(s=>s.g&&s.r===t);return l[Math.floor(Math.random()*l.length)].id}
 function aiGrow(ai){
  ai.tech=Math.min(24,Math.floor(S.T/240*(.6+ai.skill*.8)));{const el=ELV(ai);if(el===2)ai.tech=24;else if(el===1)ai.tech=Math.max(ai.tech,15);else if(S.meds&&S.meds[ai.id])ai.tech=Math.max(ai.tech,8)}
  const mine=fleets.filter(f=>f.owner===ai.id);
  if(!ai.planets&&!mine.length){ai.dead=true;return}
- const income=ai.planets?(15+6*ai.planets)*(1+S.T/3000)*(.8+ai.skill*.5)*EF(ai):0,maxTier=Math.min(TIERMAX,2+Math.floor(ai.tech/3));ai.bank=Math.min(60000*(1+SNOW(ai)*100),(ai.bank||0)+income);const budget=Math.min(ai.bank,income*3);
+ const income=ai.planets?1.08*(15+6*ai.planets)*(1+S.T/3000)*(.8+ai.skill*.5)*EF(ai):0,maxTier=Math.min(TIERMAX,2+Math.floor(ai.tech/3));ai.bank=Math.min(60000*(1+SNOW(ai)*100),(ai.bank||0)+income);const budget=Math.min(ai.bank,income*3);
  let f;
- if(!mine.length){const hp=planets.find(p=>p.owner===ai.id);if(!hp)return;f=newFleet(ai.id,ai.name+' Flotte',{},true,hp.x+(Math.random()-.5)*200,hp.y+(Math.random()-.5)*200);f.ax=f.x;f.ay=f.y}
- else{const pool=mine.filter(x=>!isStealthFleet(x));if(pool.length)f=pool[Math.floor(Math.random()*pool.length)];else{const hp=planets.find(p=>p.owner===ai.id);if(!hp)return;f=newFleet(ai.id,ai.name+' Flotte',{},true,hp.x,hp.y);f.ax=f.x;f.ay=f.y}}
+ if(!mine.length){const hp=aiSpawnPlanet(ai);if(!hp)return;f=newFleet(ai.id,ai.name+' Flotte',{},true,hp.x+(Math.random()-.5)*200,hp.y+(Math.random()-.5)*200);f.ax=f.x;f.ay=f.y}
+ else{const pool=mine.filter(x=>!isStealthFleet(x));if(pool.length)f=pool[Math.floor(Math.random()*pool.length)];else{const hp=aiSpawnPlanet(ai);if(!hp)return;f=newFleet(ai.id,ai.name+' Flotte',{},true,hp.x,hp.y);f.ax=f.x;f.ay=f.y}}
  if(fleetPower(f)<30000*EF(ai)&&budget>=30){const g=genShips(budget,maxTier,Math.random);for(const t in g)f.ships[t]=(f.ships[t]||0)+g[t];ai.bank-=Math.min(budget,basePower(g))}
  {let gc=0;for(const x of fleets)if(x.owner===ai.id)for(const t in x.ships)if(SHIP[t].g)gc+=x.ships[t];
-  if(gc<1+Math.min(4,Math.floor(S.T/4000*(.4+ai.skill)))&&S.T>=(ai.gachaAt||900)){ai.gachaAt=S.T+600+Math.random()*900;const id=aiGachaShip(ai);if(id)f.ships[id]=(f.ships[id]||0)+1}}
+  if(gc<2+Math.min(5,Math.floor(S.T/3200*(.45+ai.skill)))&&S.T>=(ai.gachaAt||700)){ai.gachaAt=S.T+450+Math.random()*700;const id=aiGachaShip(ai);if(id)f.ships[id]=(f.ships[id]||0)+1}}
  if(mine.length<(RUSH()>0?7:4)&&fleetPower(f)>(RUSH()>0?260:1200)&&Math.random()<.5){const g={};for(const t in f.ships){const h=Math.floor(f.ships[t]/2);if(h>0){g[t]=h;f.ships[t]-=h}}
   if(basePower(g)){const n=newFleet(ai.id,ai.name+' Flotte',g,true,f.x,f.y);n.ax=f.ax;n.ay=f.ay}}
 
- if(ai.bank>600&&mine.length<Math.min(8+ELV(ai)*4+Math.floor(SNOW(ai)*60),2+Math.floor(ai.planets/2))+(ai.style==='def'?0:2)+Math.round(RUSH()*4)){const hp=aiHomePlanet(ai);if(hp){const g=genShips(Math.min(ai.bank,4000*(1+SNOW(ai)*20)),maxTier,Math.random),bp=basePower(g);if(bp){ai.bank-=bp;const n=newFleet(ai.id,ai.name+' Flotte',g,true,hp.x+(Math.random()-.5)*200,hp.y+(Math.random()-.5)*200);n.ax=n.x;n.ay=n.y}}}
+ for(let k=0;k<(ai.planets>=8?2:1);k++){if(ai.bank>600&&mine.length+k<Math.min(8+ELV(ai)*4+Math.floor(SNOW(ai)*60),2+Math.floor(ai.planets*.6))+(ai.style==='def'?0:2)+Math.round(RUSH()*4)){const hp=aiSpawnPlanet(ai);if(hp){const g=genShips(Math.min(ai.bank,4000*(1+SNOW(ai)*20)),maxTier,Math.random),bp=basePower(g);if(bp){ai.bank-=bp;const n=newFleet(ai.id,ai.name+' Flotte',g,true,hp.x+(Math.random()-.5)*200,hp.y+(Math.random()-.5)*200);n.ax=n.x;n.ay=n.y}}}}
  aiStealth(ai)
 }
+function aiSpawnPlanet(ai){const own=[];for(const i of PS){const p=planets[i];if(p&&p.owner===ai.id)own.push(p)}if(!own.length)return aiHomePlanet(ai);const cp=planets[S.capital]||{x:0,y:0},pick=()=>own[Math.floor(Math.random()*own.length)],a=pick(),b=pick();return Math.hypot(b.x-cp.x,b.y-cp.y)<Math.hypot(a.x-cp.x,a.y-cp.y)?b:a}
 function aiHomePlanet(ai){const h=planets[ai.home];return h&&h.owner===ai.id?h:planets.find(p=>p.owner===ai.id)}
-const aiCap=ai=>(ai.style==='def'?6:8)+Math.floor(S.T/900*(.5+ai.skill))+Math.round(RUSH()*22)+Math.floor(SNOW(ai)*4000);
-const aggrOf=ai=>ai.aggr*(ai.style==='def'?1.35:.85)*(1-.4*SNOW(ai));
+const aiCap=ai=>(ai.style==='def'?6:8)+Math.floor(S.T/800*(.5+ai.skill))+Math.round(RUSH()*22)+Math.floor(SNOW(ai)*4000);
+const aggrOf=ai=>ai.aggr*(ai.style==='def'?1.3:.8)*(1-.4*SNOW(ai));
 function think(f){
  if(f.owner<=0||f.dead)return;const ai=AIS[f.owner-1];
  if(f.order){checkWarn(f);return}
@@ -589,7 +607,7 @@ function think(f){
  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const p=planetAt(cx+dx,cy+dy);if(!mayTake||!p||p.owner===f.owner||Math.hypot(p.x-f.x,p.y-f.y)>AGGRO)continue;
   const e=estimate(f.ships,f.owner,defendersOf('planet',p));if(e.aE>=e.dE*aggrOf(ai)&&e.dE<bs){bs=e.dE;best={kind:'planet',id:p.id}}}
  for(const g of nearby(f.x,f.y,ai.style==='def'?2200:AGGRO,g=>g.owner!==f.owner)){const e=estimate(f.ships,f.owner,defendersOf('fleet',g));if(e.aE>=e.dE*aggrOf(ai)&&e.dE<bs){bs=e.dE;best={kind:'fleet',id:g.id}}}
- if(!best&&mayTake&&S.T>=ai.expAt){ai.expAt=S.T+((2+Math.random()*4+(1-RUSH())*(80+Math.random()*150))*(1-.9*SNOW(ai)));let bsc=1e18;const R=RUSH()>.3?5:6;
+ if(!best&&mayTake&&S.T>=ai.expAt){ai.expAt=S.T+.75*((2+Math.random()*4+(1-RUSH())*(80+Math.random()*150))*(1-.9*SNOW(ai)));let bsc=1e18;const R=RUSH()>.3?5:6;
   for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const p=planetAt(cx+dx,cy+dy);if(!p||p.owner===f.owner)continue;if(RUSH()>.3&&p.owner!==-1)continue;
    const e=estimate(f.ships,f.owner,defendersOf('planet',p));if(e.aE<e.dE*aggrOf(ai)*1.2)continue;const sc=(Math.hypot(p.x-f.x,p.y-f.y)+e.dE*2)*(p.owner===-1?1:(S.T<1200?3:1));if(sc<bsc){bsc=sc;best={kind:'planet',id:p.id}}}}
  if(!best)best=aiWar(f,ai);if(best){setAttack(f,best.kind,best.id);checkWarn(f)}
@@ -627,7 +645,7 @@ function update(dt){
  hashT+=dt;if(hashT>.5){hashT=0;rebuildHash()}
  const K=Math.min(40,Math.ceil(8*S.gs));
  for(let k=0;k<K&&fleets.length;k++){thinkPtr=(thinkPtr+1)%fleets.length;think(fleets[thinkPtr])}
- for(const ai of AIS)if(!ai.dead&&S.T>=ai.growT){ai.growT=S.T+(8+Math.random()*10)+(1-RUSH())*(27+Math.random()*15);aiGrow(ai)}
+ for(const ai of AIS)if(!ai.dead&&S.T>=ai.growT){ai.growT=S.T+((8+Math.random()*10)+(1-RUSH())*(27+Math.random()*15))*.85;aiGrow(ai)}
  for(const ai of AIS)if(!ai.dead&&S.T>=(ai.defAt||0))aiDefend(ai);
 }
 
@@ -640,9 +658,9 @@ function pushAlert(text,x,y){lastAlert={text,x,y};$('alertText').textContent=tex
  clearTimeout(alertTimer);alertTimer=setTimeout(hideAlert,20000)}
 function hideAlert(){$('alertBanner').classList.add('hidden')}
 function alertJump(){if(lastAlert)jumpTo(lastAlert.x,lastAlert.y);hideAlert()}
-function jumpTo(x,y){cam.x=x;cam.y=y;cam.zoom=clamp(Math.max(cam.zoom,.6),MINZ,MAXZ);playSound('click')}
+function jumpTo(x,y){cam.x=x;cam.y=y;cam.zoom=clamp(Math.max(cam.zoom,W<700?.3:.4),MINZ,MAXZ);playSound('click')}
 let toastT=null;function toast(msg){const t=$('toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.add('hidden'),3200)}
-function cycleSpeed(){S.gs=S.gs===1?2:S.gs===2?4:1;$('speedBtn').textContent=S.gs+'x'}
+function cycleSpeed(){S.gs=S.gs===1?2:S.gs===2?4:S.gs===4?10:1;$('speedBtn').textContent=S.gs+'x'}
 
 /* ===== KAMERA / EINGABE ===== */
 const cv=$('galaxyCanvas'),ctx=cv.getContext('2d');let W=800,H=600,dpr=1;
@@ -727,7 +745,7 @@ function render(){
  for(const f of fleets){if(!f.order||(f.owner===0&&!f.placed)||fleetVis(f)<.3)continue;const o=f.order;let tp=(o.type==='move'||o.type==='mine')?{x:o.x,y:o.y,owner:-1}:targetPos(o);if(!tp)continue;
   if(f.owner>0&&tp.owner!==0)continue;const [a,c]=w2s(f.x,f.y),[d,e]=w2s(tp.x,tp.y);
   if((a<-50&&d<-50)||(a>W+50&&d>W+50)||(c<-50&&e<-50)||(c>H+50&&e>H+50))continue;
-  ctx.strokeStyle=f.owner===0?(o.type==='atk'?'rgba(251,113,133,.8)':o.type==='mine'?'rgba(251,191,36,.85)':'rgba(34,211,238,.7)'):'rgba(239,68,68,.9)';ctx.beginPath();ctx.moveTo(a,c);ctx.lineTo(d,e);ctx.stroke()}
+  ctx.strokeStyle=f.owner===0?(o.type==='atk'?'rgba(59,130,246,.95)':o.type==='mine'?'rgba(251,191,36,.85)':'rgba(34,211,238,.7)'):'rgba(239,68,68,.9)';ctx.beginPath();ctx.moveTo(a,c);ctx.lineTo(d,e);ctx.stroke()}
  ctx.setLineDash([]);
  // Flotten
  for(const f of fleets){if(f.dead||(f.owner===0&&!f.placed)||f.hideUntil>performance.now())continue;const fv=fleetVis(f);if(fv<.04)continue;const [sx,sy]=w2s(f.x,f.y);if(sx<-20||sy<-20||sx>W+20||sy>H+20)continue;
@@ -856,7 +874,7 @@ function rFleets(){
  for(const f of mine){const ed=canEdit(f),col=fleetCol[f.id];
   const types=SHIPS.filter(s=>(f.ships[s.id]||0)>0||(S.hangar[s.id]||0)>0);
   h+=card(`<div onclick="toggleFleetCol(${f.id})" class="flex justify-between items-start mb-1 cursor-pointer"><div><b class="font-orbitron text-cyan-300">${f.name}</b> ${f.id===activeFleet?'<span class="text-yellow-300">★ aktiv</span>':''}<div class="text-slate-400">${f.placed?(f.order?(f.order.type==='atk'?'Angriffsflug':f.order.type==='mine'?'Minentransport':'Unterwegs'):'Im Orbit'):'<span class="text-amber-300">Nicht platziert</span>'} • Stärke ${fmt(fleetPower(f))} • ${countShips(f.ships)} Schiffe • Tempo ${Math.round(fleetSpeed(f))}</div></div><i class="fa-solid fa-chevron-${col?'down':'up'} text-cyan-300 text-base p-2"></i></div>`
-  +(col?'':(''+(types.length?`<div class="space-y-0.5 mb-2">${types.map(s=>`<div class="flex items-center justify-between"><span${rarCol(s.id)?` style="color:${rarCol(s.id)}" title="${RAR[s.r].n}"`:''}><i class="fa-solid ${s.icon} ${rarCol(s.id)?'':'text-cyan-400'}"></i> ${s.name} <span class="text-slate-500">(Hangar ${S.hangar[s.id]||0})</span></span><span class="${ed?'':'dis'}">${btn('-10',`moveShips(${f.id},'${s.id}',-10)`,'slate')} ${btn('-1',`moveShips(${f.id},'${s.id}',-1)`,'slate')} <b class="inline-block w-10 text-center">${f.ships[s.id]||0}</b> ${btn('+1',`moveShips(${f.id},'${s.id}',1)`,'slate')} ${btn('+10',`moveShips(${f.id},'${s.id}',10)`,'slate')}</span></div>`).join('')}</div>`:'<div class="text-slate-500 mb-2">Keine Schiffe verfügbar.</div>')
+  +(col?'':(''+(types.length?`<div class="space-y-0.5 mb-2">${types.map(s=>`<div class="flex items-center justify-between shiprow"><span${rarCol(s.id)?` style="color:${rarCol(s.id)}" title="${RAR[s.r].n}"`:''}><i class="fa-solid ${s.icon} ${rarCol(s.id)?'':'text-cyan-400'}"></i> ${s.name} <span class="text-slate-500">(Hangar ${S.hangar[s.id]||0})</span></span><span class="shipctl ${ed?'':'dis'}">${btn('-10',`moveShips(${f.id},'${s.id}',-10)`,'slate')} ${btn('-1',`moveShips(${f.id},'${s.id}',-1)`,'slate')} <b class="inline-block w-10 text-center">${f.ships[s.id]||0}</b> ${btn('+1',`moveShips(${f.id},'${s.id}',1)`,'slate')} ${btn('+10',`moveShips(${f.id},'${s.id}',10)`,'slate')}</span></div>`).join('')}</div>`:'<div class="text-slate-500 mb-2">Keine Schiffe verfügbar.</div>')
   +xRkRows(f,ed)+(ed?'':'<div class="text-[10px] text-amber-300 mb-1">Umbau nur im Orbit nahe einer eigenen Kolonie möglich.</div>')
   +`<div class="flex flex-wrap gap-1">${f.placed?btn('<i class="fa-solid fa-location-crosshairs"></i> Hinspringen',`gotoFleet(${f.id})`):btn('<i class="fa-solid fa-map-pin"></i> Platzieren',`armFleet(${f.id})`,'emerald',!basePower(f.ships))}${f.placed?btn('Aktiv setzen',`armFleet(${f.id},true)`):''}${f.order?btn('Abbrechen',`recallFleet(${f.id})`,'amber'):''}${(f.rk&&f.rk.length&&f.placed)?btn('<i class="fa-solid fa-crosshairs"></i> Feuern',`openRocket(${f.id})`,'rose'):''}${btn('Umbenennen',`renameFleet(${f.id})`,'slate')}${btn('Auflösen',`disbandFleet(${f.id})`,'rose',!ed)}</div>`)))}
  if(!mine.length)h+='<div class="text-slate-500">Noch keine Flotten.</div>';
@@ -899,7 +917,7 @@ function doResearch(id){const t=TECHS.find(x=>x.id===id),l=S.lv[id]||0;if(l>=t.m
  pay(c);S.lv[id]=l+1;recalcBonus();playSound('ok');addLog(`[FORSCHUNG] ${t.name} Stufe ${l+1} abgeschlossen.`);refreshUI()}
 
 /* --- Handel --- */
-const tradeFee=()=>Math.max(.02,.15-Math.min(.06,.005*bsum('hub'))-tb('trade'));
+const tradeFee=()=>Math.max(.06,.15-Math.min(.06,.005*bsum('hub'))-tb('trade'));
 function rTrade(){const fee=tradeFee();
  let h=`<div class="mb-2 flex flex-wrap items-center gap-2"><span class="text-amber-300 font-bold text-sm"><i class="fa-solid fa-coins"></i> ${fmt(S.res.credits)} Credits</span><span class="text-slate-400">Marktgebühr ${(fee*100).toFixed(1)}% (senkbar durch Handelszentren & Techs)</span></div>
  <div class="mb-3 flex items-center gap-1">Menge: ${[1,10,100,1000,10000].map(q=>`<button onclick="S.tq=${q};renderModal()" class="px-2 py-1 rounded border text-[11px] ${S.tq===q?'bg-cyan-900/60 border-cyan-400':'bg-slate-900 border-slate-700'}">${fmt(q)}</button>`).join('')}</div>
@@ -970,7 +988,7 @@ window.onload=function(){
  for(const r of RES)S.prices[r.k]=r.p;
  const loaded=load();recalcBonus();buildResBar();addonInit(loaded);
  if(!loaded){S.hangar={};const f=newFleet(0,'Flotte 1',startShips(),false);setActive(f.id);addLog('[BEFEHL ONLINE] Platziere deine Startflotte per Doppelklick auf die Karte.')}
- const home=planets[S.capital];cam.x=home.x;cam.y=home.y;cam.zoom=.45;rebuildHash();
+ const home=planets[S.capital];cam.x=home.x;cam.y=home.y;cam.zoom=Math.max(MINZ,W<700?.22:.3);rebuildHash();
  if(!loaded)toast('Willkommen, Kommandant! Doppelklick in dein Gebiet um die Hauptwelt, um deine Flotte zu platzieren.');
  let last=performance.now(),uiT=0,saveT=0,rankT=0;
  function frame(now){const dt=Math.min(.1,(now-last)/1000);last=now;update(dt);render();
@@ -989,7 +1007,7 @@ window.onload=function(){
 const DEVPW='Godmode';
 const cleanTxt=s=>String(s||'').replace(/[<>&"'`]/g,'').trim();
 const dstr=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-TITLES.gacha='GACHA – SUPERSCHIFFE';TITLES.daily='TAGESBELOHNUNG';TITLES.profile='PROFIL & SPIELSTAND';
+TITLES.gacha='SCHIFFE ANHEUERN';TITLES.daily='TAGESBELOHNUNG';TITLES.profile='PROFIL & SPIELSTAND';
 
 /* --- Start: Spieler beginnt etwa auf Rang 100 --- */
 function startShips(){const ships={scout:4,corvette:2},hp=planets[S.capital];hp.b.power=4;hp.dirty=true;S.hangar=ships;
@@ -1081,13 +1099,13 @@ function fleetVis(f){if(f.owner===0||!isStealthFleet(f))return 1;let v=0;const o
  return v}
 function aiStealth(ai){if(ai.dead||!ai.planets||STL_IDX<0)return;const lv=ELV(ai);if(Math.min(TIERMAX,2+Math.floor(ai.tech/3))<STL_IDX)return;
  if(Math.random()>.3||fleets.filter(f=>f.owner===ai.id&&isStealthFleet(f)).length>=1+lv)return;
- const n=Math.floor(Math.min((ai.bank||0)*.5,500*EF(ai))/SHIP.stealth.power);if(n<2)return;const hp=aiHomePlanet(ai);if(!hp)return;
+ const n=Math.floor(Math.min((ai.bank||0)*.5,500*EF(ai))/SHIP.stealth.power);if(n<2)return;const hp=aiSpawnPlanet(ai);if(!hp)return;
  ai.bank-=n*SHIP.stealth.power;const f=newFleet(ai.id,ai.name+' Schattenstaffel',{stealth:n},true,hp.x+(Math.random()-.5)*200,hp.y+(Math.random()-.5)*200);f.ax=f.x;f.ay=f.y}
 /* --- Bot-Freischaltung (Spielzeit in s): Spieler bekommt Zeit zum Aufbau --- */
 /* Menschenähnlich: jeder Bot hat Persönlichkeit, eigenes Forschungstempo und reagiert auf Bedrohung */
-const NEED={flak:3,mine:6,rk:8,shield:10};
+const NEED={flak:7,mine:10,rk:13,shield:15},MINT={flak:1100,mine:1800,rk:2700,shield:3400};
 function unl(ai,k){if(!ai.pers){ai.pers=ai.style==='def'?(Math.random()<.6?'turtle':'balanced'):(Math.random()<.5?'rusher':'boomer');ai.lag=Math.floor(Math.random()*3)}
- if(S.T<600||(ai.planets<2&&k!=='flak'))return 0;
+ if(S.T<(MINT[k]||600)||(ai.planets<2&&k!=='flak'))return 0;
  const need=Math.max(1,NEED[k]+ai.lag+(ai.pers==='turtle'?-2:ai.pers==='rusher'?2:0)-Math.round((ai.thr||0)*3));
  return Math.max(0,Math.min(1,(ai.tech+1-need)/4))}
 /* --- KI-Minen & KI-Flak --- */
@@ -1106,7 +1124,7 @@ function tickAD(dt,nw){const ep=f=>f.owner===0&&f.placed&&!f.dead&&basePower(f.s
   if(nw>(a.fxT||0)&&FX.length<400){a.fxT=nw+420;FX.push({k:'shot',t0:nw,dur:200,x0:pos.x,y0:pos.y,x1:bx,y1:by,c:'#e879f9'});FX.push({k:'boom',t0:nw+200,dur:300,x1:bx,y1:by,s:10,c:'#fde047'})}
   if(nw>(a.logT||0)){a.logT=nw+10000;addLog('[FLAK] '+ai.name+' beschießt '+nm+'!',bx,by)}}
  if(ch&&nw-_xrf>600){_xrf=nw;refreshUI()}}
-const ELV=ai=>(S.elites&&S.elites[ai.id])||0,EF=ai=>{const e=ELV(ai);return (e===2?3:e===1?1.7:(S.meds&&S.meds[ai.id])?1.3:1)*(1+SNOW(ai)*30)};
+const ELV=ai=>(S.elites&&S.elites[ai.id])||0,EF=ai=>{const e=ELV(ai);return (e===2?2.2:e===1?1.5:(S.meds&&S.meds[ai.id])?1.2:1)*(1+SNOW(ai)*30)*(S.diff||1)};
 function aiDefend(ai){ensureAD();if(ai.dead)return;const now=S.T,el=Math.min(60,now-(ai.dT||now)),lv=ELV(ai);ai.dT=now;ai.defAt=now+5+Math.random()*6;
  {const pts=[],hp=planets[ai.home];if(hp&&hp.owner===ai.id)pts.push(hp);const mf=fleets.filter(f=>f.owner===ai.id&&!f.dead);if(mf.length)pts.push(mf[Math.floor(Math.random()*mf.length)]);
   let th=0;for(const q of pts)if(nearby(q.x,q.y,6000,e=>e.owner===0&&e.placed&&!e.dead&&basePower(e.ships)>400).length)th=1;
@@ -1126,12 +1144,13 @@ function aiDefend(ai){ensureAD();if(ai.dead)return;const now=S.T,el=Math.min(60,
  /* Flak: Heimatplanet und Frontplaneten zuerst */
  const front=info.slice(0,Math.max(1,Math.ceil(info.length/3))),order=[info.find(x=>x.p.id===ai.home),...front,...info].filter(Boolean);
  let best=null;for(const x of order){const c=cnt(S.xa,a=>a.pid===x.p.id);if(c<per&&(!best||c<best.c))best={x,c}}
- if(best){S.xa.push({id:S.nextB=(S.nextB||0)+1,pid:best.x.p.id,ang:.6+best.c*.8+Math.random()*.3,o:ai.id});ai.dbank-=300}
+ const totF=cnt(S.xa,a=>a.o===ai.id),maxF=Math.ceil(ai.planets*(def?.45:.25)*unl(ai,'flak'));
+ if(best&&totF<maxF){S.xa.push({id:S.nextB=(S.nextB||0)+1,pid:best.x.p.id,ang:.6+best.c*.8+Math.random()*.3,o:ai.id});ai.dbank-=300}
  /* Minen: gezielt zwischen Frontplanet und dem nächsten Spielerplaneten */
  if(unl(ai,'mine')>0&&ai.dbank>=400&&info[0]&&info[0].q&&info[0].d<30000){const mcap=Math.max(1,Math.floor(Math.min(8+lv*3,1+Math.floor(ai.planets/2)+Math.floor(ai.tech/6)+lv)*(def?1:.5)*unl(ai,'mine')));
-  if(cnt(S.xm,m=>m.o===ai.id)<mcap){const x=info[Math.floor(Math.random()*Math.min(3,info.length))];if(x.q){
+  if(cnt(S.xm,m=>m.o===ai.id)+aiPendDrop(ai,'m')<mcap){const x=info[Math.floor(Math.random()*Math.min(3,info.length))];if(x.q){
    const ang=Math.atan2(x.q.y-x.p.y,x.q.x-x.p.x)+(Math.random()-.5)*.7,d=700+Math.random()*900,mx=clamp(x.p.x+Math.cos(ang)*d,-HALF,HALF),my=clamp(x.p.y+Math.sin(ang)*d,-HALF,HALF);
-   if(!S.xm.some(m=>Math.hypot(m.x-mx,m.y-my)<450)){S.xm.push({id:S.nextB=(S.nextB||0)+1,x:mx,y:my,o:ai.id,t0:S.T+20});ai.dbank-=400}}}}}
+   if(!S.xm.some(m=>Math.hypot(m.x-mx,m.y-my)<450)&&aiStartDrop(ai,'m',mx,my))ai.dbank-=400}}}}
 /* --- Elite-Bots: ca. 5 sehr starke (★★) und 15 starke (★) --- */
 function seedElites(){S.elites={};S.meds={};const cap=planets[S.capital];if(!cap)return;
  const pl=[...PS].map(i=>planets[i]);pl.push(cap);
@@ -1251,11 +1270,11 @@ function doRetreat(){const a=lastAlert&&lastAlert.meta;if(!a){toast('Kein Angrif
 
 /* --- Beute --- */
 function lootHook(info,r,captured,fleetKill){const L={};
- if(fleetKill){const m=1+tb('loot'),b=Math.min(40000,r.dE*.25)*m,g={steel:b,coal:b*.8,copper:b*.7,food:b*.5,water:b*.5,crystals:b*.08,diamonds:r.dE>3000?Math.min(10,Math.floor(r.dE/3000)):0},parts=[];
+ if(fleetKill){const m=1+tb('loot'),b=Math.min(15000,r.dE*.12)*m,g={steel:b,coal:b*.8,copper:b*.7,food:b*.5,water:b*.5,crystals:b*.08,diamonds:r.dE>3000?Math.min(10,Math.floor(r.dE/3000)):0},parts=[];
   for(const k in g){const v=Math.round(g[k]);if(v>0){S.res[k]+=v;L[k]=(L[k]||0)+v;parts.push('+'+fmt(v)+' '+RN[k])}}
   addLog('[PLÜNDERUNG] Flotte zerstört: '+parts.join(', '));toast('Flotte geplündert: '+parts.slice(0,3).join(', ')+' …')}
-const m=1+tb('loot'),cr=Math.round(Math.min(60000,r.dE*.4)*m),st=Math.round(Math.min(60000,r.dE*.3)*m);S.res.credits+=cr;S.res.steel+=st;L.credits=cr;L.steel=(L.steel||0)+st;
- const tk=captured?3:r.dE>2000?1:0;S.gems+=tk;L.tokens=tk;addLog(`[BEUTE] +${fmt(cr)} Credits, +${fmt(st)} Stahl${tk?', +'+tk+' Warp-Token':''}`);return L}
+const m=1+tb('loot'),cr=Math.round(Math.min(20000,r.dE*.2)*m),st=Math.round(Math.min(20000,r.dE*.15)*m);S.res.credits+=cr;S.res.steel+=st;L.credits=cr;L.steel=(L.steel||0)+st;
+ const tk=captured?2:r.dE>4000?1:0;S.gems+=tk;L.tokens=tk;addLog(`[BEUTE] +${fmt(cr)} Credits, +${fmt(st)} Stahl${tk?', +'+tk+' Warp-Token':''}`);return L}
 
 /* --- Offline-Fortschritt --- */
 function offlineProgress(){const now=Date.now(),last=S.lastSeen||now;let dt=(now-last)/1000;if(dt<60)return;dt=Math.min(dt,8*3600*(1+tb('off')));
@@ -1285,10 +1304,17 @@ RENDER.daily=rDaily;
 const featured=()=>{const L=SHIPS.filter(s=>s.r==='L');return L[Math.floor(Date.now()/6048e5)%L.length]};
 const CBUN=[['Credits-Paket','credits',1500,'fa-coins'],['Stahlcontainer','steel',2500,'fa-cubes'],['Kupferbarren','copper',1800,'fa-microchip'],['Kohleladung','coal',2200,'fa-fire'],['Kristallsplitter','crystals',70,'fa-gem']];
 const UPAK=[['Fregatten-Staffel',{frigate:4},'fa-shuttle-space'],['Zerstörer-Paar',{destroyer:2},'fa-shield-halved'],['Kreuzer-Verband',{cruiser:1,corvette:3},'fa-rocket'],['Kanonenboot-Schwarm',{gunship:5},'fa-burst'],['Diamantenfund',{_d:30},'fa-gem']];
-function rollOne(){const p=S.pity;for(const k in p)p[k]++;const o=1+tb('orc');let t;
- if(p.m>=500)t='M';else if(p.l>=100)t='L';else{const x=Math.random(),mr=.0005*o,lr=.0055*o+(p.l>=80?(p.l-79)*.05:0),er=.024*o,rr=.06*o,ur=.26;
+const CRATE=[
+ {n:'Gewöhnliche Kiste',c:10,col:'#94a3b8',ic:'fa-box',r:[.0006,.008,.035,.085,.26],fl:'',d:'Günstig. Meist Rohstoffe und Schiffspakete, mit Chance auf Superschiffe.'},
+ {n:'Seltene Kiste',c:30,col:'#38bdf8',ic:'fa-box-open',r:[.0015,.022,.085,.32,.572],fl:'U',d:'Keine Rohstoff-Nieten. Mindestens ein Schiffspaket, oft ein Superschiff.'},
+ {n:'Legendäre Kiste',c:100,col:'#fbbf24',ic:'fa-gem',r:[.005,.10,.34,.555,0],fl:'R',d:'Immer ein Superschiff (mind. Selten) mit hoher Chance auf Episch+.'}];
+function crateRates(i){const o=1+tb('orc'),RT=CRATE[i].r,out={};let rem=1;'MLERU'.split('').forEach((k,j)=>{const v=Math.min(rem,j===4?RT[4]:RT[j]*o);out[k]=v;rem-=v});out.C=Math.max(0,rem);
+ if(CRATE[i].fl==='U'){out.U+=out.C;out.C=0}else if(CRATE[i].fl==='R'){out.R+=out.C+out.U;out.C=out.U=0}return out}
+function rollOne(tier){tier=tier||0;const p=S.pity;for(const k in p)p[k]++;const o=1+tb('orc');let t;
+ if(p.m>=500)t='M';else if(p.l>=90)t='L';else{const x=Math.random(),RT=CRATE[tier].r,mr=RT[0]*o,lr=RT[1]*o+(p.l>=70?(p.l-69)*.05:0),er=RT[2]*o,rr=RT[3]*o,ur=RT[4];
   t=x<mr?'M':x<mr+lr?'L':x<mr+lr+er?'E':x<mr+lr+er+rr?'R':x<mr+lr+er+rr+ur?'U':'C';
-  if(p.e>=60&&'CUR'.includes(t))t='E';else if(p.r>=25&&'CU'.includes(t))t='R';else if(p.u>=10&&t==='C')t='U'}
+  if(p.e>=50&&'CUR'.includes(t))t='E';else if(p.r>=20&&'CU'.includes(t))t='R';else if(p.u>=10&&t==='C')t='U'}
+ {const fl=CRATE[tier].fl;if(fl==='U'&&t==='C')t='U';else if(fl==='R'&&'CU'.includes(t))t='R'}
  if(t==='M')for(const k in p)p[k]=0;else if(t==='L'){p.u=p.r=p.e=p.l=0}else if(t==='E'){p.u=p.r=p.e=0}else if(t==='R'){p.u=p.r=0}else if(t==='U')p.u=0;
  const res={t};
  if('RELM'.includes(t)){const pool=SHIPS.filter(s=>s.r===t);let s=pool[Math.floor(Math.random()*pool.length)];if(t==='L'&&S.banner==='up'&&Math.random()<.5)s=featured();
@@ -1296,25 +1322,25 @@ function rollOne(){const p=S.pity;for(const k in p)p[k]++;const o=1+tb('orc');le
  else if(t==='U'){const u=UPAK[Math.floor(Math.random()*UPAK.length)];res.name=u[0];res.icon=u[2];for(const k in u[1]){if(k==='_d'){S.res.diamonds+=u[1][k];S.res.crystals+=200}else S.hangar[k]=(S.hangar[k]||0)+u[1][k]}res.sub='Im Hangar'}
  else{const c=CBUN[Math.floor(Math.random()*CBUN.length)],a=Math.round(c[2]*(.8+Math.random()*.4));S.res[c[1]]+=a;res.name=c[0];res.icon=c[3];res.sub='+'+fmt(a)+' '+RN[c[1]]}
  return res}
-function gachaPull(n){const cost=n===10?90:10*n;if(!S.dev&&S.gems<cost){toast('Nicht genug Warp-Tokens.');return}if(!S.dev)S.gems-=cost;
- const out=[];for(let i=0;i<n;i++)out.push(rollOne());for(const r of out){S.gh.unshift({t:r.t,n:r.name,ts:Date.now()})}S.gh=S.gh.slice(0,60);
+function gachaPull(n,tier){tier=tier||0;const cost=CRATE[tier].c*(n===10?9:n);if(!S.dev&&S.gems<cost){toast('Nicht genug Warp-Tokens.');return}if(!S.dev)S.gems-=cost;
+ const out=[];for(let i=0;i<n;i++)out.push(rollOne(tier));for(const r of out){S.gh.unshift({t:r.t,n:r.name,ts:Date.now()})}S.gh=S.gh.slice(0,60);
  const best=out.some(r=>r.t==='M')?'M':out.some(r=>r.t==='L')?'L':'';playSound(best?'alert':'ok');showPulls(out);refreshUI()}
 function showPulls(out){const order='MLERUC',top=[...out].sort((a,b)=>order.indexOf(a.t)-order.indexOf(b.t))[0];
  const h=`<div class="text-center mb-2 font-orbitron" style="color:${RAR[top.t].c}">${top.t==='M'?'★ MYTHISCHER FUND! ★':top.t==='L'?'LEGENDÄRER FUND!':'Ergebnis'}</div><div class="grid grid-cols-2 sm:grid-cols-5 gap-2">${out.map((r,i)=>`<div class="pullcard ${'LM'.includes(r.t)?'glowL':''}" style="color:${RAR[r.t].c};border-color:${RAR[r.t].c};animation-delay:${i*110}ms"><div class="text-[10px] font-orbitron">${RAR[r.t].n}${r.isNew?' • NEU!':''}</div><i class="fa-solid ${r.icon} text-3xl my-2"></i><div class="text-slate-100 text-[11px] font-bold">${r.name}</div><div class="text-slate-400 text-[10px]">${r.sub}</div></div>`).join('')}</div><div class="flex justify-center mt-3">${btn('Weiter','closeModal2()')}</div>`;
- $('modal2Title').textContent='BESCHWÖRUNG';setHtml($('modal2Body'),h);$('modal2Root').classList.remove('hidden')}
-function buyTokens(n){const c=n*1500;if(!S.dev&&S.res.credits<c){toast('Nicht genug Credits.');return}if(!S.dev)S.res.credits-=c;S.gems+=n;playSound('click');refreshUI()}
+ $('modal2Title').textContent='ANGEHEUERT';setHtml($('modal2Body'),h);$('modal2Root').classList.remove('hidden')}
+function buyTokens(n){const c=n*6000,td=dstr(new Date());if(!S.tkb||S.tkb.d!==td)S.tkb={d:td,n:0};if(!S.dev&&S.tkb.n+n>10){toast('Tageslimit: max. 10 gekaufte Tokens pro Tag.');return}if(!S.dev&&S.res.credits<c){toast('Nicht genug Credits.');return}if(!S.dev){S.res.credits-=c;S.tkb.n+=n}S.gems+=n;playSound('click');refreshUI()}
 function rGacha(){const p=S.pity,tab=S.gtab||'pull',sh=SHIPS.filter(s=>s.g).sort((a,b)=>'MLER'.indexOf(a.r)-'MLER'.indexOf(b.r)||b.power-a.power),own=sh.filter(s=>S.owned[s.id]).length,ft=featured(),ord=SHIPS.filter(s=>!s.g).slice(-1)[0];
- const tabs=[['pull','Beschwörung'],['col',`Sammlung ${own}/20`],['hist','Verlauf'],['rates','Raten']];
+ const tabs=[['pull','Anheuern'],['col',`Sammlung ${own}/20`],['hist','Verlauf'],['rates','Raten']];
  let h=`<div class="flex flex-wrap items-center gap-1.5 mb-3"><span class="text-fuchsia-300 font-bold text-sm mr-2"><i class="fa-solid fa-circle-nodes"></i> ${fmt(S.gems)} Tokens</span>${tabs.map(([k,n])=>`<button onclick="S.gtab='${k}';renderModal()" class="px-3 py-1.5 rounded border text-[11px] font-orbitron ${tab===k?'bg-amber-900/50 border-amber-400 text-white':'bg-slate-900 border-slate-700 text-slate-300'}">${n}</button>`).join('')}</div>`;
  const bar=(l,v,m,c)=>`<div class="mb-1.5"><div class="flex justify-between text-[10px]"><span>${l}</span><span>${v}/${m}</span></div><div class="bar"><div style="width:${Math.min(100,v/m*100)}%;background:${c}"></div></div></div>`;
  if(tab==='pull'){
-  h+=`<div class="grid md:grid-cols-2 gap-3">`+card(`<div class="flex gap-1 mb-2">${btn('Standard',`S.banner='std';renderModal()`,S.banner==='up'?'slate':'amber')}${btn('Rate-Up',`S.banner='up';renderModal()`,S.banner==='up'?'amber':'slate')}</div>${S.banner==='up'?`<div class="text-amber-300 font-orbitron"><i class="fa-solid ${ft.icon}"></i> ${ft.name}</div><div class="text-slate-400">Legendär-Treffer sind zu 50% dieses Schiff (Stärke ${fmt(ft.power)}). Rotiert wöchentlich.</div>`:'<div class="text-slate-300">Standard-Banner: 20 Superschiffe in 4 Seltenheitsstufen. Sie sind weit stärker als jedes baubare Schiff (Titan-Flaggschiff: '+fmt(ord.power)+').</div>'}<div class="mt-2 text-fuchsia-300">Mythisch: <b>Genesis-Singularität</b> – ${fmt(SHIPS.find(s=>s.r==='M').power)} Stärke (10× jedes andere Superschiff)</div>`)
-  +card(`<h4 class="font-orbitron text-amber-300 mb-2">Garantien (Pity)</h4>${bar('Legendär+ (Soft-Pity ab 80)',p.l,100,RAR.L.c)}${bar('Episch+',p.e,60,RAR.E.c)}${bar('Selten+ (Superschiff)',p.r,25,RAR.R.c)}${bar('Mythisch',p.m,500,RAR.M.c)}`)+`</div>`;
-  h+=`<div class="flex flex-wrap gap-2 mt-3">${btn('Beschwören ×1 (10 Tokens)','gachaPull(1)','amber',!S.dev&&S.gems<10)}${btn('Beschwören ×10 (90 Tokens)','gachaPull(10)','amber',!S.dev&&S.gems<90)}</div>
-  <div class="flex flex-wrap items-center gap-2 mt-3 text-slate-400">Tokens kaufen: ${btn('+1 (1.500 Cr)','buyTokens(1)','emerald',!S.dev&&S.res.credits<1500)}${btn('+10 (15.000 Cr)','buyTokens(10)','emerald',!S.dev&&S.res.credits<15000)}<span>Weitere Tokens: Tagesbelohnung, Eroberungen, Siege.</span></div>`}
+  h+=`<div class="grid md:grid-cols-2 gap-3">`+card(`<div class="flex gap-1 mb-2">${btn('Standard',`S.banner='std';renderModal()`,S.banner==='up'?'slate':'amber')}${btn('Rate-Up',`S.banner='up';renderModal()`,S.banner==='up'?'amber':'slate')}</div>${S.banner==='up'?`<div class="text-amber-300 font-orbitron"><i class="fa-solid ${ft.icon}"></i> ${ft.name}</div><div class="text-slate-400">Legendär-Treffer sind zu 50% dieses Schiff (Stärke ${fmt(ft.power)}). Rotiert wöchentlich.</div>`:'<div class="text-slate-300">Standard-Banner: 20 Superschiffe in 4 Seltenheitsstufen. Sie sind weit stärker als jedes baubare Schiff (Titan-Flaggschiff: '+fmt(ord.power)+').</div>'}<div class="mt-2 text-fuchsia-300">Mythisch: <b>Grim Reaper</b> – ${fmt(SHIPS.find(s=>s.r==='M').power)} Stärke (ca. 6× das stärkste Legendär-Schiff)</div>`)
+  +card(`<h4 class="font-orbitron text-amber-300 mb-2">Garantien (Pity)</h4>${bar('Legendär+ (Soft-Pity ab 70)',p.l,90,RAR.L.c)}${bar('Episch+',p.e,50,RAR.E.c)}${bar('Selten+ (Superschiff)',p.r,20,RAR.R.c)}${bar('Mythisch',p.m,500,RAR.M.c)}`)+`</div>`;
+  h+=`<div class="grid sm:grid-cols-3 gap-2 mt-3">${CRATE.map((c,k)=>{const r=crateRates(k),sup=r.R+r.E+r.L+r.M;return `<div class="rounded-lg p-2.5 border-2 text-center" style="border-color:${c.col};background:rgba(2,6,23,.9)"><i class="fa-solid ${c.ic} text-3xl" style="color:${c.col}"></i><div class="font-orbitron text-xs mt-1" style="color:${c.col}">${c.n}</div><div class="text-amber-300 font-bold">${c.c} Tokens</div><div class="text-[11px] text-slate-400 my-1">${c.d}</div><div class="text-[10px] text-slate-500 mb-2">Superschiff-Chance ${(sup*100).toFixed(0)}%</div><div class="flex gap-1.5 justify-center">${btn('×1 · '+c.c,`gachaPull(1,${k})`,'amber',!S.dev&&S.gems<c.c)}${btn('×10 · '+c.c*9,`gachaPull(10,${k})`,'amber',!S.dev&&S.gems<c.c*9)}</div></div>`}).join('')}</div>
+  <div class="flex flex-wrap items-center gap-2 mt-3 text-slate-400">Tokens kaufen: ${btn('+1 (6.000 Cr)','buyTokens(1)','emerald',!S.dev&&S.res.credits<6000)}${btn('+5 (30.000 Cr)','buyTokens(5)','emerald',!S.dev&&S.res.credits<30000)}<span>Kauflimit 10/Tag (heute ${(S.tkb&&S.tkb.d===dstr(new Date())?S.tkb.n:0)}/10). Weitere Tokens: Tagesbelohnung, Eroberungen, Siege.</span></div>`}
  else if(tab==='col'){h+=`<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2">${sh.map(s=>{const n=S.owned[s.id]||0,c=RAR[s.r].c;return n?`<div class="p-2 rounded-lg text-center border-2" style="border-color:${c};color:${c};background:rgba(2,6,23,.9)"><div class="text-[10px] font-orbitron">${RAR[s.r].n}</div><i class="fa-solid ${s.icon} text-2xl my-1"></i><div class="text-slate-100 font-bold text-[11px]">${s.name}</div><div class="text-slate-400 text-[10px]">Stärke ${fmt(s.power)} • ${(s.power/ord.power).toFixed(1)}× Flaggschiff<br>erhalten: ${n}</div></div>`:`<div class="p-2 rounded-lg text-center border border-slate-800 text-slate-600"><div class="text-[10px]">${RAR[s.r].n}</div><i class="fa-solid fa-question text-2xl my-1"></i><div>???</div></div>`}).join('')}</div>`}
- else if(tab==='hist'){h+=S.gh.length?`<div class="space-y-1">${S.gh.map(r=>`<div class="flex justify-between border-b border-slate-800 py-1" style="color:${RAR[r.t].c}"><span>${r.n}</span><span class="text-[10px]">${RAR[r.t].n} • ${new Date(r.ts).toLocaleString('de-DE')}</span></div>`).join('')}</div>`:'<div class="text-slate-500">Noch keine Beschwörungen.</div>'}
- else{const o=1+tb('orc');h+=`<table class="w-full text-left"><tr class="text-slate-500"><th class="p-1">Stufe</th><th>Basis-Rate</th><th>Inhalt</th></tr>${[['M',.0005*o,'1 Schiff (Grim Reaper)'],['L',.0055*o,'5 Superschiffe (38–46k Stärke)'],['E',.024*o,'6 Superschiffe (27–33k)'],['R',.06*o,'8 Superschiffe (18–22k)'],['U',.26,'Schiffspakete / Diamantenfund'],['C',1-.0005*o-.0055*o-.024*o-.06*o-.26,'Rohstoffpakete']].map(([k,r,t])=>`<tr class="border-t border-slate-800" style="color:${RAR[k].c}"><td class="p-1">${RAR[k].n}</td><td>${(r*100).toFixed(2)}%</td><td class="text-slate-300">${t}</td></tr>`).join('')}</table><div class="mt-2 text-slate-400 space-y-1"><div>• Garantien: Ungewöhnlich+ alle 10 Pulls, Selten+ nach 25, Episch+ nach 60, Legendär+ nach 100 (Soft-Pity ab 80), Mythisch nach 500.</div><div>• Superschiffe landen im Hangar, brauchen Energie und können wie normale Schiffe in Flotten eingeteilt werden.</div><div>• Forschung „Sternenorakel“ erhöht die Superschiff-Raten relativ.</div></div>`}
+ else if(tab==='hist'){h+=S.gh.length?`<div class="space-y-1">${S.gh.map(r=>`<div class="flex justify-between border-b border-slate-800 py-1" style="color:${RAR[r.t].c}"><span>${r.n}</span><span class="text-[10px]">${RAR[r.t].n} • ${new Date(r.ts).toLocaleString('de-DE')}</span></div>`).join('')}</div>`:'<div class="text-slate-500">Noch nichts angeheuert.</div>'}
+ else{const inh={M:'1 Schiff (Grim Reaper)',L:'5 Superschiffe (26–32k Stärke)',E:'6 Superschiffe (16–20k)',R:'8 Superschiffe (9–12k)',U:'Schiffspakete / Diamantenfund',C:'Rohstoffpakete'};h+=CRATE.map((c,k)=>{const r=crateRates(k);return `<div class="font-orbitron text-xs mt-2 mb-1" style="color:${c.col}">${c.n} – ${c.c} Tokens</div><table class="w-full text-left"><tr class="text-slate-500"><th class="p-1">Stufe</th><th>Rate</th><th>Inhalt</th></tr>${'MLERUC'.split('').filter(q=>r[q]>0.00001).map(q=>`<tr class="border-t border-slate-800" style="color:${RAR[q].c}"><td class="p-1">${RAR[q].n}</td><td>${(r[q]*100).toFixed(2)}%</td><td class="text-slate-300">${inh[q]}</td></tr>`).join('')}</table>`}).join('')+`<div class="mt-2 text-slate-400 space-y-1"><div>• Garantien (jede geöffnete Kiste zählt): Ungewöhnlich+ alle 10, Selten+ nach 20, Episch+ nach 50, Legendär+ nach 90 (Soft-Pity ab 70), Mythisch nach 500.</div><div>• Superschiffe landen im Hangar, brauchen Energie und können wie normale Schiffe in Flotten eingeteilt werden.</div><div>• Forschung „Sternenorakel“ erhöht die Superschiff-Raten relativ.</div></div>`}
  setBody(h)}
 RENDER.gacha=rGacha;
 
@@ -1333,7 +1359,7 @@ function devMythic(){const s=SHIPS.find(x=>x.r==='M');S.hangar[s.id]=(S.hangar[s
 function rProfile(){const L=standings(),rk=L.findIndex(s=>s.id===0)+1,me=L[rk-1]||{};
  let h=`<div class="grid md:grid-cols-2 gap-3">`+card(`<h4 class="font-orbitron text-cyan-300 mb-2"><i class="fa-solid fa-user-astronaut"></i> Kommandant</h4><div class="flex gap-2 mb-2"><input id="pname" value="${S.name}" maxlength="18" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-white outline-none focus:border-cyan-400">${btn('Speichern','setName()')}</div><div class="text-slate-300 space-y-0.5"><div>Rang: <b class="text-amber-300">#${rk}/${L.length}</b> • Punkte ${fmt(me.score||0)}</div><div>Kolonien: ${PS.size} • Flottenstärke ${fmt(me.power||0)}</div><div>Superschiffe gesammelt: ${SHIPS.filter(s=>s.g&&S.owned[s.id]).length}/20</div><div>Tagesbelohnungen: ${S.daily.total||0} (Streak ${S.daily.streak})</div></div>`)
  +card(`<h4 class="font-orbitron text-cyan-300 mb-2"><i class="fa-solid fa-floppy-disk"></i> Spielstand</h4><div class="flex flex-wrap gap-2 mb-2">${btn('Als Datei exportieren','exportSave(false)','emerald')}${btn('In Zwischenablage','exportSave(true)','slate')}</div><div class="mb-2"><input type="file" accept=".json,application/json" onchange="importFile(this)" class="text-slate-300 text-[11px] w-full"></div><textarea id="itxt" rows="2" placeholder="Spielstand-Text hier einfügen …" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-white text-[10px] outline-none"></textarea><div class="mt-1">${btn('Eingefügten Text laden',"importText($('itxt').value)",'amber')} ${btn('Neues Spiel','newGame()','rose')}</div>`)+`</div>`;
- h+=card(S.dev?`<h4 class="font-orbitron text-rose-300 mb-2"><i class="fa-solid fa-terminal"></i> Developer-Modus AKTIV</h4><div class="text-slate-300 mb-2">Unendlich Ressourcen, Credits, Tokens und Energie; Forschung sofort.</div><div class="flex flex-wrap gap-2">${btn('Alle Techs maximieren','devMaxTech()','amber')}${btn('Genesis-Singularität erhalten','devMythic()','amber')}${btn('Deaktivieren','S.dev=false;renderModal()','slate')}</div>`:`<h4 class="font-orbitron text-slate-300 mb-2"><i class="fa-solid fa-lock"></i> Developer-Modus</h4><div class="flex gap-2"><input id="devpw" type="password" placeholder="Passwort" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-white outline-none focus:border-rose-400">${btn('Entsperren','unlockDev()','rose')}</div>`,'mt-3');
+ h+=card(S.dev?`<h4 class="font-orbitron text-rose-300 mb-2"><i class="fa-solid fa-terminal"></i> Developer-Modus AKTIV</h4><div class="text-slate-300 mb-2">Unendlich Ressourcen, Credits, Tokens und Energie; Forschung sofort.</div><div class="flex flex-wrap gap-2">${btn('Alle Techs maximieren','devMaxTech()','amber')}${btn('Grim Reaper erhalten','devMythic()','amber')}${btn('Deaktivieren','S.dev=false;renderModal()','slate')}</div>`:`<h4 class="font-orbitron text-slate-300 mb-2"><i class="fa-solid fa-lock"></i> Developer-Modus</h4><div class="flex gap-2"><input id="devpw" type="password" placeholder="Passwort" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-white outline-none focus:border-rose-400">${btn('Entsperren','unlockDev()','rose')}</div>`,'mt-3');
  setBody(h)}
 RENDER.profile=rProfile;
 
@@ -1343,9 +1369,9 @@ function rHelp(){setBody(`<div class="space-y-2 text-slate-300 text-[13px]"><p><
 <p><b class="text-cyan-300">Verteidigung:</b> Kolonie antippen → <i>Flotte zuweisen</i>. Wachflotten verteidigen automatisch und kehren nach Gefechten zurück. Minen musst du mit einer Flotte zum Zielort bringen (Raumwerft → Mine → „Mit Flotte legen“); abgelegt werden sie erst nach einigen Sekunden scharf. Gegnerische Minen kannst du im Raketenstart anvisieren: kleine Raketen entschärfen sie, mittlere/große zünden sie (mit Kettenreaktion und Schaden an allen Flotten im Radius – Abstand halten!). Gegner-KIs greifen andere KIs und dich an, sobald in ihrer Nähe keine freien Planeten mehr zu holen sind, und beschießen Minen mit Raketen.</p>
 <p><b class="text-cyan-300">Angriffswarnung:</b> Greift ein Gegner an, siehst du Ankunftszeit und einen <i>Rückzug</i>-Button, der alle Flotten im Gefahrenbereich zu einer sicheren Kolonie schickt. Offline wirst du nie angegriffen.</p>
 <p><b class="text-cyan-300">Forschung:</b> Dauert Zeit (nur eine gleichzeitig), hat Ebenen und Mehrfach-Voraussetzungen. Labore und Wissenschafts-Techs beschleunigen.</p>
-<p><b class="text-cyan-300">Gacha &amp; Daily:</b> Warp-Tokens gibt es täglich, bei Siegen und per Credits. Superschiffe sind extrem stark.</p>
+<p><b class="text-cyan-300">Schiffe anheuern &amp; Daily:</b> Warp-Tokens gibt es täglich, bei Siegen und per Credits. Superschiffe sind extrem stark.</p>
 <p><b class="text-cyan-300">Ressourcen-Info:</b> Klicke oben in der Leiste auf eine Ressource – du siehst Produktion pro Minute, woher du sie bekommst und wofür du sie brauchst. Fahre mit der Maus über Buttons, Planeten und Flotten für Tooltips.</p>
-<p><b class="text-cyan-300">Gegner-Verteidigung:</b> KI-Imperien bauen ebenfalls Minen und Flak-Plattformen (violett dargestellt – deine Minen sind gelb-orange, deine Flaks blau). Elite-Imperien (◆ mittel, ★ stark, ★★ sehr stark) haben sich weit ausgebreitet, besitzen mehr und größere Flotten und rüsten schneller auf – ideale Gegner für das späte Spiel. Ländergrenzen: dein Gebiet ist leicht blau mit markanterer Grenze, Gegner sind dezent rot, neutrale Gebiete grau (änderbar im Hilfe-Menü). Tarn-Jäger-Flotten sind für Gegner erst kurz vor ihrem Ziel sichtbar – deine eigenen erscheinen halbtransparent. Nahrung &amp; Wasser versorgen deine Kolonien: ein ausreichender Vorrat beider Güter steigert die Produktion aller anderen Planeten und deine Credits um bis zu +20 % (die Ressourcen-Leiste färbt sich bei knappem Vorrat gelb/rot). Pro Planet sind bis zu 8 Flak-Plattformen möglich (Forschung „Flak-Batterien“) rund um ihre Kolonien. Sie treffen nur deine Flotten – plane Angriffe also mit Abstand oder mit genug Reserve.</p></div><div class="flex gap-2 mt-4">${btn('Jetzt speichern',"save();toast('Gespeichert.')")}${btn('Profil & Spielstand',"openModal('profile')",'slate')}${btn('Screen-Effekte (Shake/Blitz): '+(FXCFG.on?'AN':'AUS'),'toggleFx()','slate')}${btn('Ländergrenzen: '+(BORD.on?'AN':'AUS'),'toggleBord()','slate')}</div>`)}
+<p><b class="text-cyan-300">Gegner-Verteidigung:</b> KI-Imperien bauen ebenfalls Minen und Flak-Plattformen (violett dargestellt – deine Minen sind gelb-orange, deine Flaks blau). Elite-Imperien (◆ mittel, ★ stark, ★★ sehr stark) haben sich weit ausgebreitet, besitzen mehr und größere Flotten und rüsten schneller auf – ideale Gegner für das späte Spiel. Ländergrenzen: dein Gebiet ist leicht blau mit markanterer Grenze, Gegner sind dezent rot, neutrale Gebiete grau (änderbar im Hilfe-Menü). Tarn-Jäger-Flotten sind für Gegner erst kurz vor ihrem Ziel sichtbar – deine eigenen erscheinen halbtransparent. Nahrung &amp; Wasser versorgen deine Kolonien: ein ausreichender Vorrat beider Güter steigert die Produktion aller anderen Planeten und deine Credits um bis zu +20 % (die Ressourcen-Leiste färbt sich bei knappem Vorrat gelb/rot). Pro Planet sind bis zu 8 Flak-Plattformen möglich (Forschung „Flak-Batterien“) rund um ihre Kolonien. Sie treffen nur deine Flotten – plane Angriffe also mit Abstand oder mit genug Reserve.</p></div><div class="flex gap-2 mt-4">${btn('Jetzt speichern',"save();toast('Gespeichert.')")}${btn('Profil & Spielstand',"openModal('profile')",'slate')}${btn('Screen-Effekte (Shake/Blitz): '+(FXCFG.on?'AN':'AUS'),'toggleFx()','slate')}${btn('Ländergrenzen: '+(BORD.on?'AN':'AUS'),'toggleBord()','slate')}${btn('Bot-Stärke: '+((S.diff||1)<1?'Leicht':(S.diff||1)>1?'Schwer':'Normal'),'cycleDiff()','amber')}</div>`)}
 RENDER.help=rHelp;
 
 /* --- Init --- */
@@ -1356,6 +1382,7 @@ function addonInit(loaded){S.name=cleanTxt(S.name).slice(0,18)||'Kommandant';if(
 
 /* ===== ADDON 3.3.3: Ressourcen-Info, Tooltips, Grim-Reaper-FX ===== */
 const FXCFG={on:true};try{if(localStorage.getItem('ge_fx')==='0')FXCFG.on=false}catch(e){}
+function cycleDiff(){const d=S.diff||1;S.diff=d<1?1:d>1?.75:1.3;toast('Bot-Stärke: '+(S.diff<1?'Leicht':S.diff>1?'Schwer':'Normal'));renderModal()}
 function toggleFx(){FXCFG.on=!FXCFG.on;try{localStorage.setItem('ge_fx',FXCFG.on?'1':'0')}catch(e){}toast('Screen-Effekte '+(FXCFG.on?'an':'aus'));renderModal()}
 
 /* --- Kamera-Shake & Bildschirm-Blitz --- */
@@ -1444,18 +1471,18 @@ function resSources(k){const s=[],bn=BIOMES.filter(b=>b.res===k).map(b=>b.name);
  if(k==='steel')s.push(`<b>Grundeinkommen</b>: +${STEEL_PM}/Min ohne jeden Planeten`);
  if(k==='credits'){s.push('<b>Kolonien</b>: jede Kolonie bringt dauerhaft Credits');s.push('<b>Handelszentren</b> (Gebäude): bringen deutlich mehr Credits pro Stufe');s.push('<b>Handel</b>: Rohstoffe an der Börse verkaufen');s.push('<b>Beute</b> bei jedem Sieg über eine Kolonie oder Flotte')}
  else if(k==='power'){s.push('<b>Grundkapazität</b> 60 Energie');s.push('<b>Kraftwerke</b> (Gebäude): +35 Energie je Stufe');const t=TECHS.filter(t=>t.fx&&t.fx.pwr).map(t=>`${t.name} (+${Math.round(t.fx.pwr*100)}%/Stufe)`);if(t.length)s.push('<b>Forschung</b>: '+t.join(', '))}
- else if(k==='gems'){const dl=DAILY.map((d,i)=>d.tk?`${i+1}`:'').filter(Boolean);s.push(`<b>Tagesbelohnung</b>: ${Math.min(...DAILY.map(d=>d.tk))}–${Math.max(...DAILY.map(d=>d.tk))} Tokens je Abholung`+(tb('tok')?` (+${tb('tok')} durch Forschung)`:''));s.push('<b>Beute</b>: 1 Token bei Siegen über Gegner ab Stärke 2.000, 3 Tokens bei Eroberung einer Kolonie');s.push('<b>Kauf</b> im Gacha-Menü: 1.500 Credits pro Token')}
+ else if(k==='gems'){const dl=DAILY.map((d,i)=>d.tk?`${i+1}`:'').filter(Boolean);s.push(`<b>Tagesbelohnung</b>: ${Math.min(...DAILY.map(d=>d.tk))}–${Math.max(...DAILY.map(d=>d.tk))} Tokens je Abholung`+(tb('tok')?` (+${tb('tok')} durch Forschung)`:''));s.push('<b>Beute</b>: 1 Token bei Siegen über Gegner ab Stärke 4.000, 2 Tokens bei Eroberung einer Kolonie');s.push('<b>Kauf</b> im Anheuern-Menü: 6.000 Credits pro Token (max. 10/Tag)')}
  else{
   s.push(`<b>Handel</b>: kaufen gegen Credits (aktuell ca. ${fmtR(S.prices[k]||0)} Cr/Stück, Gebühr ${(tradeFee()*100).toFixed(1)}%)`);
   s.push(k==='diamonds'?'<b>Beute</b> aus zerstörten Gegnerflotten (nur ab Stärke 3.000, max. 10 je Sieg)':'<b>Beute</b> aus zerstörten Gegnerflotten');
   const d=DAILY.map((x,i)=>x.res&&x.res[k]?i+1:0).filter(Boolean);if(d.length)s.push(`<b>Tagesbelohnung</b> (Tag ${d.join(', ')})`);
-  const cb=CBUN.filter(c=>c[1]===k).map(c=>c[0]);if(cb.length)s.push(`<b>Gacha</b>: ${cb.join(', ')} (Rohstoffpaket)`);
-  if(k==='diamonds')s.push('<b>Gacha</b>: „Diamantenfund“ (Ungewöhnlich-Paket, +30 Diamanten)');
+  const cb=CBUN.filter(c=>c[1]===k).map(c=>c[0]);if(cb.length)s.push(`<b>Anheuern</b>: ${cb.join(', ')} (Rohstoffpaket)`);
+  if(k==='diamonds')s.push('<b>Anheuern</b>: „Diamantenfund“ (Ungewöhnlich-Paket, +30 Diamanten)');
   if(k==='steel')s.push('<b>Beute</b> bei jedem Sieg')}
  return s}
 function resUses(k){const u=[];
- if(k==='credits'){u.push('<b>Handel</b>: Rohstoffe kaufen');u.push('<b>Warp-Tokens</b> kaufen (1.500 Cr/Token)');return u}
- if(k==='gems'){u.push('<b>Gacha</b>: Beschwören ×1 = 10 Tokens, ×10 = 90 Tokens (Garantien auf Selten, Episch, Legendär …)');return u}
+ if(k==='credits'){u.push('<b>Handel</b>: Rohstoffe kaufen');u.push('<b>Warp-Tokens</b> kaufen (6.000 Cr/Token, max. 10/Tag)');return u}
+ if(k==='gems'){u.push('<b>Anheuern</b>: Gewöhnliche Kiste 10, Seltene Kiste 30, Legendäre Kiste 100 Tokens (×10 = 9× Preis; Garantien auf Selten, Episch, Legendär …)');return u}
  if(k==='power'){const ag={};for(const t in S.hangar)ag[t]=(ag[t]||0)+S.hangar[t];for(const f of fleets)if(f.owner===0)for(const t in f.ships)ag[t]=(ag[t]||0)+f.ships[t];
   const top=Object.entries(ag).filter(([t,n])=>n>0&&SHIP[t]).map(([t,n])=>[SHIP[t].name,SHIP[t].pw*n]).sort((a,b)=>b[1]-a[1]).slice(0,3);
   u.push('<b>Schiffe</b> verbrauchen Energie – ohne freie Energie keine weiteren Schiffe');if(top.length)u.push('Größte Verbraucher: '+top.map(([n,v])=>`${n} (${fmt(v)})`).join(', '));return u}
@@ -1470,7 +1497,7 @@ function resPopHtml(k){const m=RMETA(k),li=a=>a.map(x=>`<li class="mb-0.5">${x}<
  if(k==='power'){const used=powerUsed(),cap=powerCap(),dev=S.dev;stock=`${Math.floor(used)}/${dev?'∞':Math.floor(cap)}`;
   head=`<div class="text-lg font-orbitron ${used>cap?'text-rose-400':'text-yellow-300'}">${dev?'∞':Math.max(0,Math.floor(cap-used))} frei</div><div class="text-[11px] text-slate-400">Kapazität ${dev?'∞':Math.floor(cap)} • Verbrauch ${Math.floor(used)}</div>`;
   body=`<div class="text-slate-400 text-[11px]">Grundkapazität 60 • Kraftwerk-Stufen ${bsum('power')} × ${fmt(35*(1+tb('pwr')))}</div>`;btns=btn('Imperium öffnen',"goModal('empire')",'cyan')}
- else if(k==='gems'){stock=fmt(S.gems);head=`<div class="text-lg font-orbitron text-fuchsia-300">${fmt(S.gems)} Tokens</div><div class="text-[11px] text-slate-400">Keine laufende Produktion – Tokens kommen aus Belohnungen und Käufen.</div>`;btns=btn('Gacha öffnen',"goModal('gacha')",'amber')+btn('Tagesbelohnung',"goModal('daily')",'emerald')}
+ else if(k==='gems'){stock=fmt(S.gems);head=`<div class="text-lg font-orbitron text-fuchsia-300">${fmt(S.gems)} Tokens</div><div class="text-[11px] text-slate-400">Keine laufende Produktion – Tokens kommen aus Belohnungen und Käufen.</div>`;btns=btn('Schiffe anheuern',"goModal('gacha')",'amber')+btn('Tagesbelohnung',"goModal('daily')",'emerald')}
  else{const r=resProd(k);stock=fmt(S.res[k]);let net=r.tot,sbox='';
   if(k==='food'||k==='water'){const su=supplyInfo(),dm=su.dem*60*S.gs;r.rows.push(['Verbrauch der Kolonien (Arbeiter)',-dm]);net=r.tot-dm;
    sbox=`<div class="mt-1.5 rounded border border-slate-700/70 p-1.5 ${su.bonus>0?'text-emerald-300':'text-slate-400'}">Versorgung: Nahrung ${Math.round(su.cF*100)}% • Wasser ${Math.round(su.cW*100)}%<br>Produktionsbonus aktuell <b>+${Math.round(su.bonus*100)}%</b> auf alle anderen Planeten &amp; Credits${net<0?`<br><span class="text-rose-300">Vorrat reicht noch ca. ${fmtR(Math.round(S.res[k]/Math.abs(net)*10)/10)} Min</span>`:''}</div>`}
@@ -1517,7 +1544,7 @@ T('rocket_tech','Raketensysteme','weapons','Schaltet zielsuchende Raketen frei (
 T('rocket_dmg','Sprengköpfe','weapons','+20% Raketenschaden je Stufe',{steel:2600,crystals:500},5,['rocket_tech'],{rdmg:.2});
 T('rocket_rng','Raketenreichweite','weapons','+12% Reichweite je Stufe',{copper:2200,crystals:400},4,['rocket_tech'],{rrng:.12});
 T('rocket_slots','Raketenschächte','weapons','+1 Raketen-Slot je Flotte',{steel:4000,crystals:1200},3,['rocket_dmg:2'],{rslot:1});
-T('rd_tech','Raketenabwehr','defense','Schaltet Raketenabwehr für Flotten frei (jedes System fängt 1 Rakete ab, Bauzeit)',{steel:1000,copper:600,crystals:100},1,['rocket_tech'],{});
+T('rd_tech','Raketenabwehr','defense','Schaltet Raketenabwehr für Flotten frei (jedes System fängt 1 Rakete ab, Bauzeit)',{steel:1000,copper:600,crystals:100},1,['flak_tech'],{});
 T('rd_cap','Abwehr-Slots','defense','+1 Abwehrsystem je Flotte',{steel:2500,crystals:500},6,['rd_tech'],{rdcap:1});
 T('rd_spd','Abwehr-Fertigung','defense','-12% Bauzeit der Abwehrsysteme',{copper:2400,crystals:450},5,['rd_tech'],{rdspd:.12});
 T('rd_acc','Abfang-Präzision','defense','+3% Abfangchance',{copper:3000,crystals:700},5,['rd_tech'],{rdacc:.03});
@@ -1693,7 +1720,22 @@ let _ap=0,_xv=0,_xa=0;
 function planetHit(p,d){const np=basePower(p.garrison);if(np>0){applyLoss([p.garrison],Math.min(.7,d/np));for(const k in p.garrison)if(p.garrison[k]<=0)delete p.garrison[k];p.dirty=true}}
 function rkFixToggle(){if(!RK)return;if(RK.fix){RK.fix=null;toast('Fixierung gelöst.')}else if(RK.lock){RK.fix={kind:RK.lock.kind,id:RK.lock.id};toast('Ziel fixiert – Doppelklick löst es wieder.')}}
 /* Bot-Schilde: bauen wenn bedroht (oder am Heimatplaneten), blockieren alle fremden Flotten */
-function aiXTick(g){_xa+=g;if(_xa<3)return;_xa=0;ensureX();
+/* Bot-Minen und -Schilde muessen wie beim Spieler von einem Schiff platziert werden */
+function aiPendDrop(ai,k){let n=0;for(const f of fleets)if(f.owner===ai.id&&!f.dead&&f.xdrop&&(!k||f.xdrop.k===k))n++;return n}
+function aiStartDrop(ai,k,x,y){if(aiPendDrop(ai))return false;let best=null,bd=1e18;
+ for(const f of fleets){if(f.owner!==ai.id||f.dead||f.order||f.xdrop||!basePower(f.ships)||isStealthFleet(f))continue;const d=Math.hypot(f.x-x,f.y-y);if(d<bd){bd=d;best=f}}
+ if(!best||bd>40000)return false;best.order={type:'move',x,y};best.wp=null;best.xdrop={k,x,y,t:S.T+Math.max(240,bd/Math.max(1,fleetSpeed(best))*1.5+60)};return true}
+function aiDropTick(){ensureX();for(const f of fleets){const d=f.xdrop;if(!d)continue;const ai=AIS[f.owner-1];
+  if(f.dead||!ai||ai.dead){f.xdrop=null;continue}
+  if(S.T>d.t){f.xdrop=null;if(f.order&&f.order.type==='move')f.order=null;continue}
+  if(Math.hypot(f.x-d.x,f.y-d.y)>250)continue;
+  const R=d.k==='m'?MINE_R:SH_R;
+  if(nearby(f.x,f.y,R*1.3,e=>e.owner!==ai.id&&!e.dead&&(e.owner>0||e.placed)&&basePower(e.ships)>0).length)continue;
+  if(d.k==='m')S.xm.push({id:S.nextB=(S.nextB||0)+1,x:f.x,y:f.y,o:ai.id,t0:S.T+20});
+  else S.xs.push({id:S.nextB=(S.nextB||0)+1,o:ai.id,x:f.x,y:f.y,q:1,t0:S.T+5});
+  FX.push({k:'wave',t0:performance.now(),dur:900,x1:f.x,y1:f.y,s:d.k==='m'?200:SH_R,c:'#f87171'});
+  f.xdrop=null;const a=f.h||0;f.order={type:'move',x:clamp(f.x+Math.cos(a)*420,-HALF+100,HALF-100),y:clamp(f.y+Math.sin(a)*420,-HALF+100,HALF-100)}}}
+function aiXTick(g){_xa+=g;if(_xa<3)return;_xa=0;ensureX();try{aiDropTick()}catch(e){}
  for(let n=0;n<20;n++){const ai=AIS[_ap=(_ap+1)%AIS.length];if(!ai||ai.dead||ai.planets<2||ai.tech<2||unl(ai,'shield')<=0||Math.max(ai.bank||0,ai.dbank||0)<700)continue;
   const mine=S.xs.filter(s=>s.o===ai.id);if(mine.length>=Math.max(1,Math.floor(Math.min(3+ELV(ai)*3,1+Math.floor(ai.planets/2))*unl(ai,'shield'))))continue;if(ai.style!=='def'&&Math.random()<.5)continue;
   const own=planets.filter(p=>p.owner===ai.id);let pick=null;
@@ -1701,7 +1743,7 @@ function aiXTick(g){_xa+=g;if(_xa<3)return;_xa=0;ensureX();
   if(!pick)pick=(!mine.length&&planets[ai.home]&&planets[ai.home].owner===ai.id)?planets[ai.home]:(Math.random()<.5?own[Math.floor(Math.random()*own.length)]:null);
   if(!pick)continue;const a=Math.random()*6.283,x=pick.x+Math.cos(a)*250,y=pick.y+Math.sin(a)*250;
   if(S.xs.some(s=>s.o===ai.id&&Math.hypot(s.x-x,s.y-y)<700))continue;
-  S.xs.push({id:S.nextB=(S.nextB||0)+1,o:ai.id,x,y,q:1,t0:S.T+5});if((ai.dbank||0)>=600)ai.dbank-=600;else ai.bank-=600}}
+  if(!aiStartDrop(ai,'s',x,y))continue;if((ai.dbank||0)>=600)ai.dbank-=600;else ai.bank-=600}}
 function xsTick(g){const now=performance.now();
  for(let i=S.xs.length-1;i>=0;i--){const s=S.xs[i],ai=AIS[s.o-1];if(!ai||ai.dead){S.xs.splice(i,1);continue}if(S.T<s.t0)continue;
   const R=SH_R*(1+ai.tech*.02),mx=SH_HP*(1+ai.tech*.05);let dmg=0;
@@ -1805,7 +1847,7 @@ function xRkStock(){ensureX();if(!(S.lv.rocket_tech>0||S.lv.rd_tech>0))return'';
 function rkUnT(fid,t){const f=fleetById.get(fid);if(!f||!f.rk)return;for(let i=f.rk.length-1;i>=0;i--)if(f.rk[i].t===t)return rkUnassign(fid,i)}
 function xRkRows(f,ed){ensureX();const hR=S.lv.rocket_tech>0,hD=S.lv.rd_tech>0;if(!hR&&!hD)return'';
  if(!rkOk(f))return'<div class="text-[10px] text-slate-500 mb-1">Raketen &amp; Abwehr erst ab Kanonenboot.</div>';
- const rk=f.rk||[],row=(ic,col,nm,stock,have,dn,up)=>`<div class="flex items-center justify-between"><span><i class="fa-solid ${ic} ${col}"></i> ${nm} <span class="text-slate-500">(Lager ${stock})</span></span><span class="${ed?'':'dis'}">${btn('-1',dn,'slate')} <b class="inline-block w-10 text-center">${have}</b> ${btn('+1',up,'slate')}</span></div>`;
+ const rk=f.rk||[],row=(ic,col,nm,stock,have,dn,up)=>`<div class="flex items-center justify-between shiprow"><span><i class="fa-solid ${ic} ${col}"></i> ${nm} <span class="text-slate-500">(Lager ${stock})</span></span><span class="shipctl shipctl2 ${ed?'':'dis'}">${btn('-1',dn,'slate')} <b class="inline-block w-10 text-center">${have}</b> ${btn('+1',up,'slate')}</span></div>`;
  let h='<div class="space-y-0.5 mb-2 border-t border-slate-800 pt-1">';
  if(hR)for(const t of['S','M','L'])h+=row('fa-rocket','text-rose-400','Raketen '+RKD[t].nm,S.rst[t],rk.filter(p=>p.t===t).length,`rkUnT(${f.id},'${t}')`,`rkAssign(${f.id},'${t}')`);
  if(hD)h+=row('fa-shield-virus','text-sky-400','Raketenabwehr',S.rst.D,f.rd||0,`rdUnassign(${f.id})`,`rdAssign(${f.id})`);
@@ -1884,9 +1926,9 @@ function alBox(){if(_alBox)return _alBox;const b=document.createElement('div');b
 function alRemove(a){const i=ALS.indexOf(a);if(i>=0)ALS.splice(i,1);alRender()}
 function alRender(){const now=S.T;
  for(let i=ALS.length-1;i>=0;i--){const a=ALS[i],m=a.meta;
-  if(m){const att=fleetById.get(m.aid);if(m.kind==='fleet'){const tp=fleetById.get(m.id);if(tp&&!tp.dead){a.x=tp.x;a.y=tp.y}}
+  if(m){const att=fleetById.get(m.aid);if(att&&!att.dead){const tg=m.kind==='fleet'?fleetById.get(m.id):planets[m.id];if(tg){const eta=Math.max(0,Math.round(Math.hypot(tg.x-att.x,tg.y-att.y)/fleetSpeed(att)/S.gs));a.text=a.text.replace(/Ankunft in ca\. \d+ s/,'Ankunft in ca. '+eta+' s')}}if(m.kind==='fleet'){const tp=fleetById.get(m.id);if(tp&&!tp.dead){a.x=tp.x;a.y=tp.y}}
    if(!att||att.dead||!att.order||att.order.type!=='atk'||att.order.id!==m.id||now-a.t>900)ALS.splice(i,1)}
-  else if(now-a.t>25)ALS.splice(i,1)}
+  else if(now-a.t>(/abgewehrt/i.test(a.text)?6:25))ALS.splice(i,1)}
  const box=alBox();box.textContent='';
  ALS.slice(-5).reverse().forEach(a=>{const d=document.createElement('div');
   d.className='glass-panel-rose rounded-lg border border-rose-500/60 px-3 py-1.5 flex items-center justify-between shadow-2xl cursor-pointer';d.style.pointerEvents='auto';
@@ -2069,6 +2111,7 @@ render=function(){_r9();try{if(!RK2)return;const R=RK2,f=fleetById.get(R.fid);if
   if(a==='audio'){toggleAudio();const m=document.getElementById('mAud');if(m)m.className='fa-solid '+(audioOn?'fa-volume-high':'fa-volume-xmark')+' text-slate-300'}
   else if(a==='rep')toggleReports();else openModal(a)};
  document.addEventListener('pointerdown',e=>{const m=menu();if(m&&!m.classList.contains('hidden')&&!m.contains(e.target)&&e.target.closest('#menuBtn')==null)m.classList.add('hidden')});
+ setInterval(()=>{const d=document.getElementById('dailyDot'),on=d&&!d.classList.contains('hidden');['mDot','menuDot'].forEach(i=>{const e=document.getElementById(i);if(e)e.classList.toggle('hidden',!on)})},1000);
  setTimeout(()=>{updRep();try{layoutVars()}catch(e){}},300);
  setTimeout(()=>{try{layoutVars()}catch(e){}},1200);
 })();
