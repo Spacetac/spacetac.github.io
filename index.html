@@ -149,7 +149,7 @@ function playSound(t){if(!audioOn)return;try{audioCtx=audioCtx||new (window.Audi
 function toggleAudio(){audioOn=!audioOn;$('audioBtn').innerHTML=`<i class="fa-solid ${audioOn?'fa-volume-high':'fa-volume-xmark'}"></i>`}
 
 /* ===== DATEN ===== */
-const N=120,CELL=2400,WORLD=N*CELL,HALF=WORLD/2,TURRET=120,AGGRO=1500,PLACE_R=8000,SEED=20260427,KEY='galaxy_empire_save_v5',SPDX=1.2;
+const N=120,CELL=2400,WORLD=N*CELL,HALF=WORLD/2,TURRET=120,AGGRO=1500,SEED=20260427,KEY='galaxy_empire_save_v5',SPDX=1.2;
 const STEEL_PM=120;
 const RES=[
  {k:'steel',n:'Stahl',i:'fa-cubes',c:'text-slate-300',p:4},
@@ -245,7 +245,7 @@ T('mine_tech','Orbitalminen','defense','Schaltet Weltraumminen frei (Bau in der 
 T('mine_dmg','Minen-Sprengkraft','defense','+20% Minenschaden je Stufe',{steel:1500,coal:900,crystals:200},5,['mine_tech'],{mdmg:.2});
 T('mine_field','Minenfelder','defense','+10 Minen-Kapazität und +10% Auslöse-Radius je Stufe',{copper:1800,crystals:350},4,['mine_tech'],{mcap:10,mrad:.1});
 T('mine_gacha','Panzerbrechende Minen','defense','+25% Minenschaden gegen Superschiffe je Stufe',{crystals:2500,diamonds:200},3,['mine_dmg:3'],{mgx:.25});
-T('flak_tech','Stationäre Flak','defense','Schaltet Flak-Plattformen frei (nur auf eigenen Planeten)',{steel:900,copper:500},1,['planetary_defenses'],{});
+T('flak_tech','Stationäre Flak','defense','Schaltet Flak-Plattformen frei (nur auf eigenen Planeten)',{steel:300,copper:180},1,['plasma_shields'],{});
 T('flak_dmg','Flak-Feuerkraft','defense','+20% Flak-Schaden je Stufe',{steel:2500,crystals:500},5,['flak_tech'],{fdmg:.2});
 T('flak_rng','Flak-Reichweite','defense','+10% Flak-Reichweite je Stufe',{copper:2200,crystals:400},4,['flak_tech'],{frng:.1});
 T('flak_slots','Flak-Batterien','defense','+1 Flak-Plattform pro Planet je Stufe',{steel:4000,crystals:1200},5,['flak_dmg:2'],{fslot:1});
@@ -319,9 +319,15 @@ function generateWorld(){
  let ph=null,bestD=-1;
  for(let t=0;t<800;t++){const p=planets[cellY(rng()*HALF-HALF/2)*N+cellX(rng()*HALF-HALF/2)];let md=1e9;for(const h of homeArr){const q=planets[h];md=Math.min(md,Math.hypot(p.x-q.x,p.y-q.y))}
   if(md>bestD){bestD=md;ph=p}if(md>=12000)break}
+ /* Spawn: neues Spiel -> zufälliger Startplatz (weit genug von Gegnern); bestehender Spielstand behält seine Hauptwelt */
+ {let capOv=-1;try{const raw=localStorage.getItem(KEY);if(raw){const d0=JSON.parse(raw);if(d0&&d0.v===5&&d0.S&&Number.isInteger(d0.S.capital)&&planets[d0.S.capital])capOv=d0.S.capital}}catch(e){}
+  if(capOv>=0)ph=planets[capOv];
+  else{let bp=null,bd2=-1;for(let t=0;t<1500;t++){const p=planets[cellY((Math.random()*2-1)*HALF*.9)*N+cellX((Math.random()*2-1)*HALF*.9)];if(homes.has(p.id))continue;let md=1e9;for(const h of homeArr){const q=planets[h];md=Math.min(md,Math.hypot(p.x-q.x,p.y-q.y))}
+   if(md>bd2){bd2=md;bp=p}if(md>=12000)break}
+   if(bp)ph=bp}}
  S.capital=ph.id;
  homeArr.forEach((hid,i)=>{const nm=i<10?AI0[i]:`${ADJ[i%ADJ.length]} ${NOUN[Math.floor(i/ADJ.length)%NOUN.length]}${i>=204?' II':''}`;
-  AIS.push({id:i+1,name:nm,hue:Math.round((i*137.5)%360),col:`hsl(${Math.round((i*137.5)%360)},70%,58%)`,tech:0,aggr:1.25+rng()*.55,skill:rng(),growT:30+rng()*40,expAt:420+rng()*400,capAt:300+rng()*300,planets:0,home:hid,dead:false})});
+  AIS.push({id:i+1,name:nm,hue:Math.round((i*137.5)%360),col:`hsl(${Math.round((i*137.5)%360)},70%,58%)`,tech:0,aggr:1.25+rng()*.55,skill:rng(),growT:30+rng()*40,expAt:40+rng()*80,capAt:20+rng()*50,style:(((i+1)*2654435761)>>>0)%100<45?'def':'off',planets:0,home:hid,dead:false})});
  for(const p of planets){if(homes.has(p.id)||p.id===ph.id)continue;
   const d=Math.hypot(p.x-ph.x,p.y-ph.y),r=rng();let pw,mt,tu;
   if(d<12000||r<.62){pw=15+rng()*75;mt=pw>50?2:1;tu=0}else if(r<.9){pw=120+rng()*380;mt=3;tu=Math.floor(rng()*2)}else if(r<.98){pw=600+rng()*1900;mt=5;tu=1+Math.floor(rng()*3)}else{pw=3000+rng()*6000;mt=7;tu=3+Math.floor(rng()*4)}
@@ -361,7 +367,12 @@ function fleetRarCol(f){let b=-1;for(const t in f.ships)if(f.ships[t]>0&&SHIP[t]
 const shipsHtml=d=>{const e=Object.entries(d).filter(([t,n])=>n>0);return e.length?e.map(([t,n])=>{const c=rarCol(t);return `<span class="inline-block bg-slate-800/80 border border-slate-700 rounded px-1.5 py-0.5 mr-1 mb-1"${c?` title="${RAR[SHIP[t].r].n}" style="border-color:${c};color:${c};box-shadow:0 0 6px ${c}77"`:''}><i class="fa-solid ${SHIP[t].icon} ${c?'':'text-cyan-400'}"></i> ${SHIP[t].name} ×${fmt(n)}</span>`}).join(''):'<span class="text-slate-500">keine Schiffe</span>'};
 const hangarCount=()=>countShips(S.hangar);
 const WARN=()=>1800+tb('warn');
-function nearOwn(x,y,r){for(const i of PS){const p=planets[i];if(Math.hypot(p.x-x,p.y-y)<=r)return true}return false}
+/* Platzierung/Bauen NUR innerhalb der angezeigten eigenen Gebietsgrenzen (Voronoi-Zelle der eigenen Planeten) */
+function inOwnTerr(x,y){const cx=cellX(x),cy=cellY(y);let q=-1,bd=1e18;
+ for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const xx=cx+dx,yy=cy+dy;if(xx<0||yy<0||xx>=N||yy>=N)continue;const p=planets[yy*N+xx],d=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);if(d<bd){bd=d;q=p.id}}
+ if(q<0||planets[q].owner!==0)return false;
+ const P=vorPoly(q);let ins=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)ins=!ins}return ins}
+function nearOwn(x,y){return inOwnTerr(x,y)}
 
 /* ===== FLOTTEN ===== */
 function addFleet(f){fleets.push(f);fleetById.set(f.id,f)}
@@ -407,7 +418,7 @@ function resolveAttack(f){
  const info=defendersOf(o.kind,tgt),defOwner=info.owner,attName=ownerName(f.owner),tname=tgt.name,tx=tgt.x,ty=tgt.y;
  const myth=Object.keys(f.ships).some(t=>f.ships[t]>0&&SHIP[t].r==='M'),snap=[f,...info.fleets].map(d=>({d,x:d.x,y:d.y,h:d.h,owner:d.owner,rc:fleetRarCol(d)}));const r=fight(f,info);const fxd=spawnBattle(f,tx,ty,defOwner,r,myth);
  if(fxd){const nw=performance.now();for(const sn of snap)if(!basePower(sn.d.ships))GH.push({x:sn.x,y:sn.y,h:sn.h,owner:sn.owner,rc:sn.rc,until:nw+(sn.d===f?fxd-200:FXG)})}
- f.order=null;f.cool=25;let captured=false,held=false;
+ f.order=null;f.cool=(f.owner>0&&S.T<1200)?8:25;let captured=false,held=false;
  for(const d of info.fleets)if(d!==f&&!basePower(d.ships))removeFleet(d);
  if(o.kind==='planet')tgt.dirty=true;
  if(r.win&&o.kind==='planet'){
@@ -415,7 +426,7 @@ function resolveAttack(f){
   else{captured=true;const prev=tgt.owner;
    if(f.owner===0){tgt.garrison={};tgt.b={mine:1,power:0,turret:0,lab:0,hub:0,yard:0}}
    else{tgt.garrison=genShips(40+Math.random()*80,Math.min(TIERMAX,2+Math.floor(AIS[f.owner-1].tech/3)),Math.random);tgt.b={mine:0,power:0,turret:prev===0?1:Math.min(tgt.b.turret,2),lab:0,hub:0,yard:0}}
-   setOwner(tgt,f.owner);f.ax=tgt.x;f.ay=tgt.y;if(f.owner===0&&basePower(f.ships))f.order={type:'move',x:tgt.x,y:tgt.y};if(f.owner>0)AIS[f.owner-1].capAt=S.T+150+Math.random()*250}}
+   setOwner(tgt,f.owner);f.ax=tgt.x;f.ay=tgt.y;if(f.owner===0&&basePower(f.ships))f.order={type:'move',x:tgt.x,y:tgt.y};if(f.owner>0)AIS[f.owner-1].capAt=S.T+((prev===-1&&S.T<1500)?12+Math.random()*28:150+Math.random()*250)}}
  const left=Object.assign({},f.ships),attDead=!basePower(f.ships);if(attDead)removeFleet(f);
  const win=r.win;
  if(f.owner===0||defOwner===0){
@@ -446,23 +457,24 @@ function aiGrow(ai){
  if(mine.length<4&&fleetPower(f)>1200&&Math.random()<.5){const g={};for(const t in f.ships){const h=Math.floor(f.ships[t]/2);if(h>0){g[t]=h;f.ships[t]-=h}}
   if(basePower(g)){const n=newFleet(ai.id,ai.name+' Flotte',g,true,f.x,f.y);n.ax=f.ax;n.ay=f.ay}}
 
- if(ai.bank>600&&mine.length<Math.min(8+ELV(ai)*4,2+Math.floor(ai.planets/2))){const hp=aiHomePlanet(ai);if(hp){const g=genShips(Math.min(ai.bank,4000),maxTier,Math.random),bp=basePower(g);if(bp){ai.bank-=bp;const n=newFleet(ai.id,ai.name+' Flotte',g,true,hp.x+(Math.random()-.5)*200,hp.y+(Math.random()-.5)*200);n.ax=n.x;n.ay=n.y}}}
+ if(ai.bank>600&&mine.length<Math.min(8+ELV(ai)*4,2+Math.floor(ai.planets/2))+(ai.style==='def'?0:2)){const hp=aiHomePlanet(ai);if(hp){const g=genShips(Math.min(ai.bank,4000),maxTier,Math.random),bp=basePower(g);if(bp){ai.bank-=bp;const n=newFleet(ai.id,ai.name+' Flotte',g,true,hp.x+(Math.random()-.5)*200,hp.y+(Math.random()-.5)*200);n.ax=n.x;n.ay=n.y}}}
  aiStealth(ai)
 }
 function aiHomePlanet(ai){const h=planets[ai.home];return h&&h.owner===ai.id?h:planets.find(p=>p.owner===ai.id)}
-const aiCap=ai=>4+Math.floor(S.T/900*(.5+ai.skill));
+const aiCap=ai=>(ai.style==='def'?6:8)+Math.floor(S.T/900*(.5+ai.skill));
+const aggrOf=ai=>ai.aggr*(ai.style==='def'?1.35:.85);
 function think(f){
  if(f.owner<=0||f.dead)return;const ai=AIS[f.owner-1];
  if(f.order){checkWarn(f);return}
- if(f.cool>0||S.T<90||!basePower(f.ships))return;
+ if(f.cool>0||S.T<12||!basePower(f.ships))return;
  let best=null,bs=1e18;
  const cx=cellX(f.x),cy=cellY(f.y),mayTake=S.T>=ai.capAt&&ai.planets<aiCap(ai);
  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const p=planetAt(cx+dx,cy+dy);if(!mayTake||!p||p.owner===f.owner||Math.hypot(p.x-f.x,p.y-f.y)>AGGRO)continue;
-  const e=estimate(f.ships,f.owner,defendersOf('planet',p));if(e.aE>=e.dE*ai.aggr&&e.dE<bs){bs=e.dE;best={kind:'planet',id:p.id}}}
- for(const g of nearby(f.x,f.y,AGGRO,g=>g.owner!==f.owner)){const e=estimate(f.ships,f.owner,defendersOf('fleet',g));if(e.aE>=e.dE*ai.aggr&&e.dE<bs){bs=e.dE;best={kind:'fleet',id:g.id}}}
- if(!best&&mayTake&&S.T>420&&S.T>=ai.expAt){ai.expAt=S.T+100+Math.random()*150;let bsc=1e18;const R=6;
+  const e=estimate(f.ships,f.owner,defendersOf('planet',p));if(e.aE>=e.dE*aggrOf(ai)&&e.dE<bs){bs=e.dE;best={kind:'planet',id:p.id}}}
+ for(const g of nearby(f.x,f.y,ai.style==='def'?2200:AGGRO,g=>g.owner!==f.owner)){const e=estimate(f.ships,f.owner,defendersOf('fleet',g));if(e.aE>=e.dE*aggrOf(ai)&&e.dE<bs){bs=e.dE;best={kind:'fleet',id:g.id}}}
+ if(!best&&mayTake&&S.T>=ai.expAt){ai.expAt=S.T+(S.T<900?20+Math.random()*40:100+Math.random()*150);let bsc=1e18;const R=6;
   for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const p=planetAt(cx+dx,cy+dy);if(!p||p.owner===f.owner)continue;
-   const e=estimate(f.ships,f.owner,defendersOf('planet',p));if(e.aE<e.dE*ai.aggr*1.2)continue;const sc=Math.hypot(p.x-f.x,p.y-f.y)+e.dE*2;if(sc<bsc){bsc=sc;best={kind:'planet',id:p.id}}}}
+   const e=estimate(f.ships,f.owner,defendersOf('planet',p));if(e.aE<e.dE*aggrOf(ai)*1.2)continue;const sc=(Math.hypot(p.x-f.x,p.y-f.y)+e.dE*2)*(p.owner===-1?1:(S.T<1200?3:1));if(sc<bsc){bsc=sc;best={kind:'planet',id:p.id}}}}
  if(!best)best=aiWar(f,ai);if(best){setAttack(f,best.kind,best.id);checkWarn(f)}
 }
 function checkWarn(f){const o=f.order;if(!o||o.type!=='atk'||fleetVis(f)<.5||(f.alerted&&S.T-f.alerted<40))return;const t=targetPos(o);if(!t||t.owner!==0)return;
@@ -544,14 +556,14 @@ function onDouble(x,y){if(placing){placeDef(x,y);return}const f=activeFleet?flee
  let [wx,wy]=s2w(x,y);wx=clamp(wx,-HALF+100,HALF-100);wy=clamp(wy,-HALF+100,HALF-100);
  if(!f.placed){
   if(!basePower(f.ships)){toast('Diese Flotte hat keine Schiffe. Füge im Flottenmenü Schiffe hinzu.');return}
-  if(!nearOwn(wx,wy,PLACE_R)){toast('Flotten können nur in der Nähe deiner Kolonien (Radius '+PLACE_R+') platziert werden.');return}
+  if(!inOwnTerr(wx,wy)){toast('Flotten können nur innerhalb deines Gebietes (blau umrandet) platziert werden.');return}
   f.placed=true;f.x=wx;f.y=wy;f.ax=wx;f.ay=wy;f.order=null;playSound('ok');toast(`${f.name} platziert.`);refreshUI()}
  else{if(!basePower(f.ships)){toast('Leere Flotte kann nicht fliegen.');return}f.guard=null;f.retreat=false;
   const o=pickAt(x,y),ot=o?(o.type==='planet'?planets[o.id]:fleetById.get(o.id)):null;
   if(ot&&ot.owner!==0){setAttack(f,o.type,o.id);sel=o;setActive(f.id);playSound('alert');toast(`${f.name} greift ${ot.name} an!`);refreshUI();return}
   f.order={type:'move',x:wx,y:wy};playSound('click');toast(`${f.name} fliegt zum Ziel.`);refreshUI()}}
 function setActive(id){activeFleet=id;const f=id?fleetById.get(id):null,bar=$('hintBar');
- if(f&&(placing==='mine'||placing==='shield')){bar.classList.remove('hidden');$('hintText').textContent=placeHint()}else if(f){bar.classList.remove('hidden');$('hintText').textContent=f.placed?`${f.name}: Doppelklick auf die Karte = bewegen, auf ein Ziel = automatisch angreifen`:`${f.name}: Doppelklick auf die Karte (nahe deiner Kolonie) = Flotte platzieren`}else if(placing){bar.classList.remove('hidden');$('hintText').textContent=placeHint()}else bar.classList.add('hidden')}
+ if(f&&(placing==='mine'||placing==='shield')){bar.classList.remove('hidden');$('hintText').textContent=placeHint()}else if(f){bar.classList.remove('hidden');$('hintText').textContent=f.placed?`${f.name}: Doppelklick auf die Karte = bewegen, auf ein Ziel = automatisch angreifen`:`${f.name}: Doppelklick in dein Gebiet (blau umrandet) = Flotte platzieren`}else if(placing){bar.classList.remove('hidden');$('hintText').textContent=placeHint()}else bar.classList.add('hidden')}
 const mini=$('minimap'),mctx=mini.getContext('2d');
 mini.addEventListener('pointerdown',e=>{const r=mini.getBoundingClientRect();cam.x=clamp(((e.clientX-r.left)/r.width-.5)*WORLD,-HALF,HALF);cam.y=clamp(((e.clientY-r.top)/r.height-.5)*WORLD,-HALF,HALF);e.preventDefault()});
 window.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('modal2Root').classList.contains('hidden'))closeModal2();else if(!$('modalRoot').classList.contains('hidden'))closeModal();else{closeTarget();placing=null;setActive(null)}}});
@@ -562,23 +574,21 @@ function tri(x,y,h,s){ctx.beginPath();ctx.moveTo(x+Math.cos(h)*s,y+Math.sin(h)*s
 function render(){
  const z=cam.zoom;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#02040a';ctx.fillRect(0,0,W,H);{const so=shakeOff();if(so[0]||so[1])ctx.setTransform(dpr,0,0,dpr,so[0]*dpr,so[1]*dpr)}
  ctx.fillStyle='rgba(255,255,255,.55)';for(const s of STARS){const x=((s[0]*W-cam.x*z*s[2])%W+W)%W,y=((s[1]*H-cam.y*z*s[2])%H+H)%H;ctx.fillRect(x,y,s[3]>.8?2:1,s[3]>.8?2:1)}
- if(BORD.on)drawTerr();try{window.xDrawBelow&&window.xDrawBelow()}catch(e){}
+ {const _a=activeFleet&&fleetById.get(activeFleet);if(BORD.on||placing||(_a&&!_a.placed))drawTerr()}try{window.xDrawBelow&&window.xDrawBelow()}catch(e){}
  const [bx,by]=w2s(-HALF,-HALF);ctx.strokeStyle='rgba(244,63,94,.45)';ctx.lineWidth=2;ctx.strokeRect(bx,by,WORLD*z,WORLD*z);
  const [l,t]=s2w(0,0),[r,b]=s2w(W,H);
  const x0=Math.max(0,cellX(l)-1),x1=Math.min(N-1,cellX(r)+1),y0=Math.max(0,cellY(t)-1),y1=Math.min(N-1,cellY(b)+1);
  const armed=activeFleet&&fleetById.get(activeFleet)&&!fleetById.get(activeFleet).placed;
- if(armed){ctx.strokeStyle='rgba(34,211,238,.35)';ctx.fillStyle='rgba(34,211,238,.04)';ctx.setLineDash([8,8]);ctx.lineWidth=1.5;for(const i of PS){const p=planets[i],[sx,sy]=w2s(p.x,p.y);ctx.beginPath();ctx.arc(sx,sy,PLACE_R*z,0,6.283);ctx.fill();ctx.stroke()}ctx.setLineDash([])}
- for(let cy=y0;cy<=y1;cy++)for(let cx=x0;cx<=x1;cx++){const p=planets[cy*N+cx],[sx,sy]=w2s(p.x,p.y);if(sx<-40||sy<-40||sx>W+40||sy>H+40)continue;
+  for(let cy=y0;cy<=y1;cy++)for(let cx=x0;cx<=x1;cx++){const p=planets[cy*N+cx],[sx,sy]=w2s(p.x,p.y);if(sx<-40||sy<-40||sx>W+40||sy>H+40)continue;
   const rr=Math.max(p.owner>=0?3.6:2.2,p.r*z),bio=BIOMES[p.biome];
   if(p.owner!==-1){ctx.fillStyle=p.owner===0?'#3b82f6':ownerColor(p.owner);ctx.globalAlpha=p.owner>=0?.4:.25;ctx.beginPath();ctx.arc(sx,sy,rr+(p.owner>=0?6:4)+(p.owner===0?2:0),0,6.283);ctx.fill();ctx.globalAlpha=1;if(p.owner>=0){ctx.strokeStyle=(p.owner>0?'rgba(239,68,68,':'rgba(59,130,246,')+(.5+.4*Math.sin(performance.now()/350+p.id)).toFixed(2)+')';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(sx,sy,rr+11,0,6.283);ctx.stroke()}}
   ctx.fillStyle=bio.color;ctx.beginPath();ctx.arc(sx,sy,rr,0,6.283);ctx.fill();
   if(p.owner!==-1&&rr>3){ctx.strokeStyle=ownerColor(p.owner);ctx.lineWidth=p.owner===0?2.5:1.5;ctx.stroke()}
   if(z>.55){ctx.fillStyle=p.owner===0?'#93c5fd':'#94a3b8';ctx.font='10px Rajdhani';ctx.textAlign='center';ctx.fillText(p.name,sx,sy+rr+11);
-   if(p.owner>0&&z>.5){ctx.fillStyle='#f87171';ctx.fillText('⚔ '+AIS[p.owner-1].name,sx,sy+rr+22)}
+   if(p.owner>0&&z>.5){ctx.fillStyle='#f87171';ctx.fillText((AIS[p.owner-1].style==='def'?'🛡 ':'⚔ ')+AIS[p.owner-1].name,sx,sy+rr+22)}
    else if(p.owner===0&&z>.5){ctx.fillStyle='#60a5fa';ctx.fillText(p.id===S.capital?'★ Hauptwelt':'★ Kolonie',sx,sy+rr+22)}}}
  ensureB();
- if(placing==='mine'&&false){ctx.strokeStyle='rgba(251,191,36,.35)';ctx.fillStyle='rgba(251,191,36,.04)';ctx.setLineDash([8,8]);ctx.lineWidth=1.5;for(const i of PS){const p=planets[i],[px,py]=w2s(p.x,p.y);ctx.beginPath();ctx.arc(px,py,PLACE_R*z,0,6.283);ctx.fill();ctx.stroke()}ctx.setLineDash([])}
- for(const m of S.mines){const [mx,my]=w2s(m.x,m.y);if(mx<-20||my<-20||mx>W+20||my>H+20)continue;const pr=(m.t0&&S.T<m.t0)?-.5:.5+.5*Math.sin(performance.now()/300+m.id);ctx.fillStyle='rgba(245,158,11,'+(.45+.4*pr).toFixed(2)+')';ctx.strokeStyle='#fbbf24';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(mx,my,4,0,6.283);ctx.fill();ctx.stroke();
+  for(const m of S.mines){const [mx,my]=w2s(m.x,m.y);if(mx<-20||my<-20||mx>W+20||my>H+20)continue;const pr=(m.t0&&S.T<m.t0)?-.5:.5+.5*Math.sin(performance.now()/300+m.id);ctx.fillStyle='rgba(245,158,11,'+(.45+.4*pr).toFixed(2)+')';ctx.strokeStyle='#fbbf24';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(mx,my,4,0,6.283);ctx.fill();ctx.stroke();
   for(let q=0;q<4;q++){const an=q*1.5708+.78;ctx.beginPath();ctx.moveTo(mx+Math.cos(an)*4,my+Math.sin(an)*4);ctx.lineTo(mx+Math.cos(an)*8,my+Math.sin(an)*8);ctx.stroke()}
   if(z>.5){ctx.setLineDash([3,4]);ctx.strokeStyle='rgba(251,191,36,.25)';ctx.beginPath();ctx.arc(mx,my,MINE_R*(1+tb('mrad'))*z,0,6.283);ctx.stroke();ctx.setLineDash([])}}
  for(const a of S.aa){const p=planets[a.pid];if(!p)continue;const q=aaPos(a),[px,py]=w2s(p.x,p.y),[qx,qy]=w2s(q.x,q.y);if(qx<-30||qy<-30||qx>W+30||qy>H+30)continue;
@@ -634,7 +644,7 @@ function save(){if(window.NOSAVE)return;S.lastSeen=Date.now();try{const d={v:5,S
  ov:planets.filter(p=>p.dirty).map(p=>({id:p.id,o:p.owner,g:p.garrison,b:p.b}))};localStorage.setItem(KEY,JSON.stringify(d))}catch(e){}}
 function load(){try{const raw=localStorage.getItem(KEY);if(!raw)return false;const d=JSON.parse(raw);if(d.v!==5)return false;
  Object.assign(S,d.S);S.dev=false;fleets=[];fleetById.clear();
- for(const f of d.fleets){f.h=0;f.cool=0;f.wait=Math.random()*5;f.dead=false;if(f.owner>0)f.order=null;addFleet(f)}
+ for(const f of d.fleets){f.h=0;f.cool=0;f.hold=0;f.wait=Math.random()*5;f.dead=false;if(f.owner>0)f.order=null;addFleet(f)}
  d.ais.forEach((a,i)=>Object.assign(AIS[i],a));
  for(const o of d.ov){const p=planets[o.id];p.owner=o.o;p.garrison=o.g;p.b=o.b;p.dirty=true}
  recount();activeFleet=null;if(d.act&&fleetById.has(d.act))setActive(d.act);return true}catch(e){console.warn(e);return false}}
@@ -713,7 +723,7 @@ function renderModal(){if(curModal){const b=$('modalBody'),st=b.scrollTop;RENDER
 function setBody(h){setHtml($('modalBody'),h)}
 
 /* --- Flotten --- */
-function canEdit(f){return !f.placed||(!f.order&&nearOwn(f.x,f.y,2600))}
+function canEdit(f){return !f.placed||(!f.order&&nearOwn(f.x,f.y))}
 function rFleets(){
  const mine=fleets.filter(f=>f.owner===0),hc=hangarCount();
  let h=`<div class="flex flex-wrap gap-2 items-center mb-3">${btn('<i class="fa-solid fa-plus"></i> Neue leere Flotte','newPlayerFleet(false)')}${btn('<i class="fa-solid fa-wand-magic-sparkles"></i> Neue Flotte aus allem im Hangar','newPlayerFleet(true)','emerald',!hc)}<span class="text-slate-400">Energie ${Math.floor(powerUsed())}/${Math.floor(powerCap())}</span></div>`;
@@ -732,7 +742,7 @@ function moveShips(fid,t,d){const f=fleetById.get(fid);if(!f||!canEdit(f))return
  if(d>0){d=Math.min(d,S.hangar[t]||0);if(d<=0)return;S.hangar[t]-=d;f.ships[t]=(f.ships[t]||0)+d}
  else{d=Math.min(-d,f.ships[t]||0);if(d<=0)return;f.ships[t]-=d;if(!f.ships[t])delete f.ships[t];S.hangar[t]=(S.hangar[t]||0)+d}
  if(!(S.hangar[t]>0))delete S.hangar[t];refreshUI()}
-function armFleet(id,keep){setActive(id);const f=fleetById.get(id);if(!keep&&f&&!f.placed){closeModal();toast('Doppelklick auf die Karte nahe einer Kolonie, um die Flotte zu platzieren.')}else{toast(f.name+' ist jetzt aktiv.');refreshUI()}}
+function armFleet(id,keep){setActive(id);const f=fleetById.get(id);if(!keep&&f&&!f.placed){closeModal();toast('Doppelklick in dein Gebiet (blau umrandet), um die Flotte zu platzieren.')}else{toast(f.name+' ist jetzt aktiv.');refreshUI()}}
 function gotoFleet(id){const f=fleetById.get(id);if(f){closeModal();jumpTo(f.x,f.y);sel={type:'fleet',id};setActive(id);renderTarget(true)}}
 function renameFleet(id){const f=fleetById.get(id),n=prompt('Neuer Flottenname:',f.name);if(n&&n.trim()){f.name=n.trim().slice(0,24);refreshUI()}}
 function disbandFleet(id){const f=fleetById.get(id);if(!f||!canEdit(f))return;for(const t in f.ships)S.hangar[t]=(S.hangar[t]||0)+f.ships[t];removeFleet(f);refreshUI()}
@@ -837,7 +847,7 @@ window.onload=function(){
  const loaded=load();recalcBonus();buildResBar();addonInit(loaded);
  if(!loaded){S.hangar={};const f=newFleet(0,'Flotte 1',startShips(),false);setActive(f.id);addLog('[BEFEHL ONLINE] Platziere deine Startflotte per Doppelklick auf die Karte.')}
  const home=planets[S.capital];cam.x=home.x;cam.y=home.y;cam.zoom=.45;rebuildHash();
- if(!loaded)toast('Willkommen, Kommandant! Doppelklick auf die Karte nahe deiner Hauptwelt, um deine Flotte zu platzieren.');
+ if(!loaded)toast('Willkommen, Kommandant! Doppelklick in dein Gebiet um die Hauptwelt, um deine Flotte zu platzieren.');
  let last=performance.now(),uiT=0,saveT=0,rankT=0;
  function frame(now){const dt=Math.min(.1,(now-last)/1000);last=now;update(dt);render();
   uiT+=dt;if(uiT>.3){uiT=0;updateHUD();renderTarget();renderLog()}
@@ -870,7 +880,8 @@ function updTapBtn(){const b=$('tapBtn');if(b){b.textContent=S.tapMove?'Tippen=B
 /* --- Forschung mit Laufzeit, Ebenen und Mehrfach-Voraussetzungen --- */
 const reqOk=r=>{const [id,l]=r.split(':');return(S.lv[id]||0)>=(+l||1)};
 const reqName=r=>{const [id,l]=r.split(':');return TECHS.find(x=>x.id===id).name+(l?' Lv'+l:'')};
-function techTime(t){let s=0;for(const k in t.cost)s+=t.cost[k];return Math.min(1500,6*Math.sqrt(s/8))*(1+.4*(S.lv[t.id]||0))/(1+.04*bsum('lab')+tb('rspd'))}
+const TM={flak_tech:.35,shield_tech:.35,flak_dmg:.5,flak_rng:.5,shield_hp:.5,shield_rad:.5};
+function techTime(t){let s=0;for(const k in t.cost)s+=t.cost[k];return Math.min(1500,6*Math.sqrt(s/8))*(TM[t.id]||1)*(1+.4*(S.lv[t.id]||0))/(1+.04*bsum('lab')+tb('rspd'))}
 const fdur=s=>{s=Math.ceil(s);return s>=3600?Math.floor(s/3600)+'h '+Math.floor(s%3600/60)+'m':s>=60?Math.floor(s/60)+'m '+(s%60)+'s':s+'s'};
 function techDepth(t,m={}){if(m[t.id])return m[t.id];let d=1;for(const r of t.req){const x=TECHS.find(q=>q.id===r.split(':')[0]);if(x)d=Math.max(d,1+techDepth(x,m))}return m[t.id]=d}
 function doResearch(id){const t=TECHS.find(x=>x.id===id),l=S.lv[id]||0;if(l>=t.max||t.req.some(r=>!reqOk(r)))return;
@@ -966,22 +977,23 @@ function tickAD(dt,nw){const ep=f=>f.owner===0&&f.placed&&!f.dead&&basePower(f.s
  if(ch&&nw-_xrf>600){_xrf=nw;refreshUI()}}
 const ELV=ai=>(S.elites&&S.elites[ai.id])||0,EF=ai=>{const e=ELV(ai);return e===2?3:e===1?1.7:1};
 function aiDefend(ai){ensureAD();if(ai.dead)return;const now=S.T,el=Math.min(60,now-(ai.dT||now)),lv=ELV(ai);ai.dT=now;ai.defAt=now+5+Math.random()*6;
- ai.dbank=Math.min(2500,(ai.dbank||0)+el*(2+ai.planets)*(1+now/3000)*(.8+(ai.skill||0)*.5)*(lv===2?2:lv===1?1.4:1));
+ {const inc=el*(2+ai.planets)*(1+now/3000)*(.8+(ai.skill||0)*.5)*(lv===2?2:lv===1?1.4:1),fs=ai.style==='def'?.3:.55;ai.dbank=Math.min(2500,(ai.dbank||0)+inc*(1-fs));ai.bank=Math.min(60000,(ai.bank||0)+inc*fs)}
  if(ai.dbank<300)return;
  /* Priorität: erst genug Flotten, dann Verteidigung */
  const fcap=Math.min(8+lv*4,2+Math.floor(ai.planets/2)),myF=fleets.filter(f=>f.owner===ai.id&&!f.dead);
- if(myF.length<Math.ceil(fcap*.75))return;
- if(myF.reduce((s,f)=>s+fleetPower(f),0)<ai.planets*300*(1+ai.tech*.15))return;
+ const def=ai.style==='def',toFleet=()=>{ai.bank=Math.min(60000,(ai.bank||0)+ai.dbank*.7);ai.dbank*=.3};
+ if(myF.length<Math.ceil(fcap*(def?.6:.9))){toFleet();return}
+ if(myF.reduce((s,f)=>s+fleetPower(f),0)<ai.planets*(def?240:380)*(1+ai.tech*.15)){toFleet();return}
  const own=planets.filter(p=>p.owner===ai.id);if(!own.length)return;
  const pp=[...PS].map(i=>planets[i]);
  const info=own.map(p=>{let d=1e9,q=null;for(const t of pp){const e=Math.hypot(t.x-p.x,t.y-p.y);if(e<d){d=e;q=t}}return{p,d,q}}).sort((x,y)=>x.d-y.d);
- const cnt=(arr,fn)=>arr.reduce((n,x)=>n+(fn(x)?1:0),0),per=Math.min(8,1+Math.floor(ai.tech/3)+lv);
+ const cnt=(arr,fn)=>arr.reduce((n,x)=>n+(fn(x)?1:0),0),per=def?Math.min(8,2+Math.floor(ai.tech/3)+lv):Math.min(4,1+Math.floor(ai.tech/5)+lv);
  /* Flak: Heimatplanet und Frontplaneten zuerst */
  const front=info.slice(0,Math.max(1,Math.ceil(info.length/3))),order=[info.find(x=>x.p.id===ai.home),...front,...info].filter(Boolean);
  let best=null;for(const x of order){const c=cnt(S.xa,a=>a.pid===x.p.id);if(c<per&&(!best||c<best.c))best={x,c}}
  if(best){S.xa.push({id:S.nextB=(S.nextB||0)+1,pid:best.x.p.id,ang:.6+best.c*.8+Math.random()*.3,o:ai.id});ai.dbank-=300}
  /* Minen: gezielt zwischen Frontplanet und dem nächsten Spielerplaneten */
- if(ai.dbank>=400&&info[0]&&info[0].q&&info[0].d<30000){const mcap=Math.min(8+lv*3,1+Math.floor(ai.planets/2)+Math.floor(ai.tech/6)+lv);
+ if(ai.dbank>=400&&info[0]&&info[0].q&&info[0].d<30000){const mcap=Math.min(8+lv*3,1+Math.floor(ai.planets/2)+Math.floor(ai.tech/6)+lv)*(def?1:.5);
   if(cnt(S.xm,m=>m.o===ai.id)<mcap){const x=info[Math.floor(Math.random()*Math.min(3,info.length))];if(x.q){
    const ang=Math.atan2(x.q.y-x.p.y,x.q.x-x.p.x)+(Math.random()-.5)*.7,d=700+Math.random()*900,mx=clamp(x.p.x+Math.cos(ang)*d,-HALF,HALF),my=clamp(x.p.y+Math.sin(ang)*d,-HALF,HALF);
    if(!S.xm.some(m=>Math.hypot(m.x-mx,m.y-my)<450)){S.xm.push({id:S.nextB=(S.nextB||0)+1,x:mx,y:my,o:ai.id,t0:S.T+20});ai.dbank-=400}}}}}
@@ -1071,10 +1083,10 @@ function assignAll(pid){for(const f of fleets)if(f.owner===0&&basePower(f.ships)
 
 /* --- Gegner-Angriffe: Raids auf den Spieler + Rückzug --- */
 function aiWar(f,ai){if(S.T<240||S.T<ai.capAt||S.T<(ai.warAt||0)||ai.planets>=aiCap(ai)+8||fleetPower(f)<400)return null;
- ai.warAt=S.T+45+Math.random()*75;
+ if(ai.style==='def'&&Math.random()<.6){ai.warAt=S.T+90+Math.random()*120;return null}ai.warAt=S.T+(ai.style==='def'?90:30)+Math.random()*(ai.style==='def'?120:50);
  const cx=cellX(f.x),cy=cellY(f.y),R=6;let best=null,bsc=1e18;
  for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const p=planetAt(cx+dx,cy+dy);if(!p||p.owner<0||p.owner===f.owner||(p.owner===0&&p.id===S.capital))continue;
-  const e=estimate(f.ships,f.owner,defendersOf('planet',p));if(e.aE<e.dE*ai.aggr)continue;
+  const e=estimate(f.ships,f.owner,defendersOf('planet',p));if(e.aE<e.dE*aggrOf(ai))continue;
   const sc=Math.hypot(p.x-f.x,p.y-f.y)+e.dE*2;if(sc<bsc){bsc=sc;best={kind:'planet',id:p.id}}}
  return best}
 function aiRaid(f,ai){if(S.T<240||S.T<ai.capAt||Math.random()>.12)return null;let best=null,bd=1e18;
@@ -1183,7 +1195,7 @@ RENDER.profile=rProfile;
 
 /* --- Hilfe --- */
 function rHelp(){setBody(`<div class="space-y-2 text-slate-300 text-[13px]"><p><b class="text-cyan-300">Ziel:</b> Du startest etwa auf <b>Rang 100</b> von 200. Baue Wirtschaft, Forschung und Flotten aus und werde die Nummer 1. <span class="text-red-400">Rot = Gegner.</span></p>
-<p><b class="text-cyan-300">Flotten:</b> Im Flottenmenü zusammenstellen, aktiv setzen und auf der Karte nahe einer Kolonie platzieren (Doppelklick, oder auf dem Handy mit „Tippen=Bewegen“ einfach antippen).</p>
+<p><b class="text-cyan-300">Flotten:</b> Im Flottenmenü zusammenstellen, aktiv setzen und auf der Karte innerhalb deines Gebietes platzieren (Doppelklick, oder auf dem Handy mit „Tippen=Bewegen“ einfach antippen).</p>
 <p><b class="text-cyan-300">Verteidigung:</b> Kolonie antippen → <i>Flotte zuweisen</i>. Wachflotten verteidigen automatisch und kehren nach Gefechten zurück. Minen musst du mit einer Flotte zum Zielort bringen (Raumwerft → Mine → „Mit Flotte legen“); abgelegt werden sie erst nach einigen Sekunden scharf.</p>
 <p><b class="text-cyan-300">Angriffswarnung:</b> Greift ein Gegner an, siehst du Ankunftszeit und einen <i>Rückzug</i>-Button, der alle Flotten im Gefahrenbereich zu einer sicheren Kolonie schickt. Offline wirst du nie angegriffen.</p>
 <p><b class="text-cyan-300">Forschung:</b> Dauert Zeit (nur eine gleichzeitig), hat Ebenen und Mehrfach-Voraussetzungen. Labore und Wissenschafts-Techs beschleunigen.</p>
@@ -1352,7 +1364,7 @@ const shR=()=>SH_R*(1+tb('shrad')),shHP=()=>SH_HP*(1+tb('shhp')),shCap=()=>SH_BA
 const rdTime=()=>40*(1-Math.min(.6,tb('rdspd'))),rdCap=()=>3+tb('rdcap'),rkSlots=()=>2+tb('rslot');
 const RKT=[];let _la=-99,_ac=0,_ar=0,_ab=0,_b2=0,GONE=null;
 /* Forschung */
-T('shield_tech','Schutzschilde','defense','Schaltet Schutzschilde frei (Bau in der Raumwerft, Ablegen per Flotte im eigenen Gebiet)',{steel:800,copper:500},1,['plasma_shields'],{});
+T('shield_tech','Schutzschilde','defense','Schaltet Schutzschilde frei (Bau in der Raumwerft, Ablegen per Flotte im eigenen Gebiet)',{steel:300,copper:200},1,['plasma_shields'],{});
 T('shield_hp','Schild-Energie','defense','+25% Schild-Energie je Stufe',{steel:2200,crystals:400},5,['shield_tech'],{shhp:.25});
 T('shield_rad','Schild-Radius','defense','+12% Schild-Radius je Stufe',{copper:2000,crystals:450},4,['shield_tech'],{shrad:.12});
 T('shield_cap','Schildgitter','defense','+2 Schild-Kapazität je Stufe',{steel:3500,crystals:900},5,['shield_hp:2'],{shcap:2});
@@ -1388,7 +1400,7 @@ function nudge(f){const a=f.h||0;f.order={type:'move',x:clamp(f.x+Math.cos(a)*42
 function deployShield(f){ensureX();f.order=null;
  if(!(S.stock.shield>0)){toast('Kein Schild im Vorrat – Auftrag abgebrochen.');return}
  if(S.sh.length>=shCap()){toast('Schild-Limit erreicht ('+shCap()+').');return}
- if(!nearOwn(f.x,f.y,6000)){toast('Schilde nur im eigenen Gebiet.');return}
+ if(!nearOwn(f.x,f.y)){toast('Schilde nur im eigenen Gebiet.');return}
  if(nearby(f.x,f.y,shR()*1.3,e=>e.owner>0&&!e.dead&&basePower(e.ships)>0).length){toast('Feindliche Flotte zu nah – Schild nicht platziert.');return}
  S.sh.push({id:S.nextB=(S.nextB||0)+1,x:f.x,y:f.y,q:1,t0:S.T+5});S.stock.shield--;
  FX.push({k:'wave',t0:performance.now(),dur:900,x1:f.x,y1:f.y,s:shR(),c:'#38bdf8'});nudge(f);
@@ -1445,7 +1457,7 @@ function xTick(g){ensureX();shTick(g);rkTick(g);astCollect(g);botTick(g);let ch=
  const [wx,wy]=s2w(sx,sy),f=activeFleet?fleetById.get(activeFleet):null;
  if(!f||f.owner!==0||!f.placed||!basePower(f.ships)){toast('Wähle zuerst eine platzierte eigene Flotte (anklicken) – sie muss das Schild transportieren.');return}
  if(S.sh.length>=shCap()){toast('Schild-Limit erreicht ('+shCap()+').');return}
- if(!nearOwn(wx,wy,6000)){toast('Schilde nur im eigenen Gebiet (max. 6000 Einheiten von einer Kolonie).');return}
+ if(!inOwnTerr(wx,wy)){toast('Schilde nur innerhalb deines Gebietes (blau umrandet).');return}
  f.guard=null;f.retreat=false;f.order={type:'mine',what:'shield',x:clamp(wx,-HALF+100,HALF-100),y:clamp(wy,-HALF+100,HALF-100)};
  toast(f.name+' transportiert das Schild zum Zielort.');placing=null;setActive(f.id);playSound('ok');refreshUI()}}
 window.xShHint=()=>'Schutzschild ('+(S.stock.shield||0)+' im Vorrat): Eigene Flotte anklicken, dann Doppelklick auf einen Ort in deinem Gebiet • Esc = beenden';
@@ -1480,7 +1492,7 @@ function xFleetHtmlOld(){const mine=fleets.filter(f=>f.owner===0&&basePower(f.sh
  if(!hR&&!hD)return h+'<div class="text-slate-500">Erforsche „Raketensysteme“ (Waffen) und „Raketenabwehr“ (Verteidigung).</div>';
  const c=t=>costHtml(shipCost({cost:RKC[t]}));
  h+=`<div class="text-slate-400 mb-1">Klein ×12 (je ${RKD.S.d}): ${c('S')}<br>Mittel ×4 (je ${RKD.M.d}): ${c('M')}<br>Groß ×1 (${RKD.L.d}): ${c('L')}<br>Abwehr (fängt 1 Rakete, ${Math.round(rdTime())} s Bauzeit): ${costHtml(shipCost({cost:RDC}))}<br>Montage nur nahe einer eigenen Kolonie.</div><div class="space-y-1.5">`;
- for(const f of mine){const near=nearOwn(f.x,f.y,2600)&&f.placed,pk=(f.rk||[]).map(p=>`${RKD[p.t].nm} ×${p.n}`).join(', ')||'keine';
+ for(const f of mine){const near=nearOwn(f.x,f.y)&&f.placed,pk=(f.rk||[]).map(p=>`${RKD[p.t].nm} ×${p.n}`).join(', ')||'keine';
   h+=card(`<b class="text-cyan-300">${f.name}</b><div class="text-slate-400">Raketen (${(f.rk||[]).length}/${rkSlots()}): ${pk}<br>Abwehr: ${f.rd||0}/${rdCap()} bereit${f.rqn?` • +${f.rqn} im Bau (${fdur(Math.max(0,(f.rqt-S.T)/S.gs))})`:''}</div><div class="flex gap-1 flex-wrap mt-1">${hR?['S','M','L'].map(t=>btn(RKD[t].nm,`rkInstall(${f.id},'${t}')`,'amber',!near)).join('')+btn('<i class="fa-solid fa-crosshairs"></i> Feuern',`openRocket(${f.id})`,'rose',!(f.rk&&f.rk.length)||!f.placed):''}${hD?btn('Abwehr +1',`rdBuild(${f.id})`,'emerald',!near):''}</div>`)}
  return h+'</div>'}
 function xShieldHtml(){ensureX();const ok=S.lv.shield_tech>0,c=shipCost({cost:SH_COST});
@@ -1489,9 +1501,9 @@ function xShieldHtml(){ensureX();const ok=S.lv.shield_tech>0,c=shipCost({cost:SH
 function xExtra(){if(!curModal||(curModal!=='fleets'&&curModal!=='yard'))return;const b=$('modalBody');let x=$('xExtra');if(!x||!x.isConnected||x._m!==curModal){if(x)x.remove();x=document.createElement('div');x.id='xExtra';x._m=curModal;b.appendChild(x)}setHtml(x,curModal==='fleets'?xFleetHtml():xYardHtml())}
 {const _f=RENDER.fleets,_y=RENDER.yard;RENDER.fleets=function(){_f();xExtra()};RENDER.yard=function(){_y();xExtra()}}
 setInterval(()=>{try{if(curModal==='fleets')xExtra()}catch(e){}},700);
-function rkInstall(fid,t){const f=fleetById.get(fid);if(!f||!f.placed||!nearOwn(f.x,f.y,2600)){toast('Raketen nur nahe einer eigenen Kolonie montierbar.');return}
+function rkInstall(fid,t){const f=fleetById.get(fid);if(!f||!f.placed||!nearOwn(f.x,f.y)){toast('Raketen nur im eigenen Gebiet montierbar.');return}
  f.rk=f.rk||[];if(f.rk.length>=rkSlots()){toast('Alle Raketen-Slots belegt.');return}const c=shipCost({cost:RKC[t]});if(!canPay(c)){toast('Nicht genug Ressourcen.');return}pay(c);f.rk.push(mkPack(t));playSound('ok');refreshUI()}
-function rdBuild(fid){const f=fleetById.get(fid);if(!f||!f.placed||!nearOwn(f.x,f.y,2600)){toast('Abwehr nur nahe einer eigenen Kolonie baubar.');return}
+function rdBuild(fid){const f=fleetById.get(fid);if(!f||!f.placed||!nearOwn(f.x,f.y)){toast('Abwehr nur im eigenen Gebiet baubar.');return}
  if((f.rd||0)+(f.rqn||0)>=rdCap()){toast('Alle Abwehr-Slots belegt/in Bau.');return}const c=shipCost({cost:RDC});if(!canPay(c)){toast('Nicht genug Ressourcen.');return}pay(c);
  f.rqn=(f.rqn||0)+1;if(!f.rqt)f.rqt=S.T+rdTime();playSound('ok');refreshUI()}
 /* Fadenkreuz-Menü */
@@ -1538,7 +1550,7 @@ function rkFixToggle(){if(!RK)return;if(RK.fix){RK.fix=null;toast('Fixierung gel
 /* Bot-Schilde: bauen wenn bedroht (oder am Heimatplaneten), blockieren alle fremden Flotten */
 function aiXTick(g){_xa+=g;if(_xa<3)return;_xa=0;ensureX();
  for(let n=0;n<20;n++){const ai=AIS[_ap=(_ap+1)%AIS.length];if(!ai||ai.dead||ai.planets<2||ai.tech<2||Math.max(ai.bank||0,ai.dbank||0)<700)continue;
-  const mine=S.xs.filter(s=>s.o===ai.id);if(mine.length>=Math.min(3+ELV(ai)*3,1+Math.floor(ai.planets/2)))continue;
+  const mine=S.xs.filter(s=>s.o===ai.id);if(mine.length>=Math.min(3+ELV(ai)*3,1+Math.floor(ai.planets/2)))continue;if(ai.style!=='def'&&Math.random()<.5)continue;
   const own=planets.filter(p=>p.owner===ai.id);let pick=null;
   for(const p of own){if(nearby(p.x,p.y,5000,e=>e.owner!==ai.id&&!e.dead&&(e.owner>0||e.placed)&&basePower(e.ships)>600).length){pick=p;break}}
   if(!pick)pick=(!mine.length&&planets[ai.home]&&planets[ai.home].owner===ai.id)?planets[ai.home]:(Math.random()<.5?own[Math.floor(Math.random()*own.length)]:null);
@@ -1624,22 +1636,22 @@ function rdQueue(n){ensureX();if(S.dq.n+n>20){toast('Bauschlange voll (max. 20).
 function xFleetHtmlOld2(){const mine=fleets.filter(f=>f.owner===0&&basePower(f.ships)>0);if(!mine.length)return'';ensureX();const hR=S.lv.rocket_tech>0,hD=S.lv.rd_tech>0,st=S.rst;
  let h='<h3 class="font-orbitron text-rose-300 mt-4 mb-2"><i class="fa-solid fa-rocket"></i> RAKETEN &amp; RAKETENABWEHR</h3>';
  if(!hR&&!hD)return h+'<div class="text-slate-500">Erforsche „Raketensysteme“ (Waffen) bzw. „Raketenabwehr“ (Verteidigung) und baue sie in der Raumwerft.</div>';
- h+=`<div class="text-slate-400 mb-1">Lager: Klein ×${st.S} • Mittel ×${st.M} • Groß ×${st.L} • Abwehr ×${st.D}${S.dq.n?` (+${S.dq.n} im Bau)`:''}<br>Zuweisen nur im Orbit nahe einer Kolonie. Tragen können es nur Flotten mit Schiffen ab Kanonenboot.</div><div class="space-y-1.5">`;
+ h+=`<div class="text-slate-400 mb-1">Lager: Klein ×${st.S} • Mittel ×${st.M} • Groß ×${st.L} • Abwehr ×${st.D}${S.dq.n?` (+${S.dq.n} im Bau)`:''}<br>Zuweisen nur innerhalb deines Gebietes. Tragen können es nur Flotten mit Schiffen ab Kanonenboot.</div><div class="space-y-1.5">`;
  for(const f of mine){const ok=rkOk(f),ed=canEdit(f),rk=f.rk||[],pk=rk.map(p=>`${RKD[p.t].nm} ×${p.n}`).join(', ')||'keine';
   h+=card(`<b class="text-cyan-300">${f.name}</b>`+(ok?`<div class="text-slate-400">Raketen (${rk.length}/${rkSlots()}): ${pk}<br>Abwehr: ${f.rd||0}/${rdCap()}</div><div class="flex gap-1 flex-wrap mt-1">`
    +(hR?['S','M','L'].map(t=>btn('+ '+RKD[t].nm,`rkAssign(${f.id},'${t}')`,'amber',!ed||!st[t]||rk.length>=rkSlots())).join('')+rk.map((p,i)=>btn('− '+RKD[p.t].nm,`rkUnassign(${f.id},${i})`,'slate',!ed)).join('')+btn('<i class="fa-solid fa-crosshairs"></i> Feuern',`openRocket(${f.id})`,'rose',!rk.length||!f.placed):'')
    +(hD?btn('+ Abwehr',`rdAssign(${f.id})`,'emerald',!ed||!st.D||(f.rd||0)>=rdCap())+btn('− Abwehr',`rdUnassign(${f.id})`,'slate',!ed||!f.rd):'')+'</div>':'<div class="text-slate-500">Nur kleine Schiffe – Raketen und Abwehr erst ab Kanonenboot.</div>'))}
  return h+'</div>'}
-function rkAssign(fid,t){ensureX();const f=fleetById.get(fid);if(!f||f.owner!==0)return;if(!rkOk(f)){toast('Erst Schiffe ab Kanonenboot können Raketen tragen.');return}if(!canEdit(f)){toast('Flotte muss unbewegt nahe einer Kolonie sein.');return}
+function rkAssign(fid,t){ensureX();const f=fleetById.get(fid);if(!f||f.owner!==0)return;if(!rkOk(f)){toast('Erst Schiffe ab Kanonenboot können Raketen tragen.');return}if(!canEdit(f)){toast('Flotte muss unbewegt im eigenen Gebiet sein.');return}
  f.rk=f.rk||[];if(f.rk.length>=rkSlots()){toast('Alle Raketen-Slots belegt.');return}if(!(S.rst[t]>0)){toast('Kein Raketenpaket im Lager – in der Werft bauen.');return}S.rst[t]--;f.rk.push(mkPack(t));playSound('ok');refreshUI()}
 function rkUnassign(fid,i){const f=fleetById.get(fid);if(!f||!f.rk||!f.rk[i]||!canEdit(f))return;const p=f.rk.splice(i,1)[0];S.rst[p.t]++;playSound('click');refreshUI()}
-function rdAssign(fid){ensureX();const f=fleetById.get(fid);if(!f||f.owner!==0)return;if(!rkOk(f)){toast('Erst Schiffe ab Kanonenboot können Abwehr tragen.');return}if(!canEdit(f)){toast('Flotte muss unbewegt nahe einer Kolonie sein.');return}
+function rdAssign(fid){ensureX();const f=fleetById.get(fid);if(!f||f.owner!==0)return;if(!rkOk(f)){toast('Erst Schiffe ab Kanonenboot können Abwehr tragen.');return}if(!canEdit(f)){toast('Flotte muss unbewegt im eigenen Gebiet sein.');return}
  if((f.rd||0)>=rdCap()){toast('Alle Abwehr-Slots belegt.');return}if(!(S.rst.D>0)){toast('Kein Abwehrsystem im Lager – in der Werft bauen.');return}S.rst.D--;f.rd=(f.rd||0)+1;playSound('ok');refreshUI()}
 function rdUnassign(fid){const f=fleetById.get(fid);if(!f||!f.rd||!canEdit(f))return;f.rd--;S.rst.D++;playSound('click');refreshUI()}
 {const _xt=xTick;xTick=function(g){_xt(g);if(S.dq.n>0&&S.T>=S.dq.t){S.rst.D++;S.dq.n--;S.dq.t=S.dq.n>0?S.T+rdTime():0;if(curModal==='yard'||curModal==='fleets')refreshUI()}}}
 {const _df=disbandFleet;disbandFleet=function(id){const f=fleetById.get(id);if(f&&canEdit(f)){ensureX();for(const p of f.rk||[])S.rst[p.t]++;S.rst.D+=f.rd||0;f.rk=[];f.rd=0}_df(id)}}
 {const _od=onDouble;onDouble=function(x,y){window._md=performance.now();return _od(x,y)}}
-{const _sb=spawnBattle;spawnBattle=function(f,tx,ty,o,r,myth){const d=_sb(f,tx,ty,o,r,myth);if(myth&&d&&f)f.hold=performance.now()+d;return d}}
+{const _sb=spawnBattle;spawnBattle=function(f,tx,ty,o,r,myth){const d=_sb(f,tx,ty,o,r,myth);if(d&&f&&(myth||(f.order&&f.order.kind==='planet')))f.hold=performance.now()+d;return d}}
 setInterval(()=>{try{if(curModal==='yard')xExtra()}catch(e){}},700);
 
 /* ===== ADD-ON v3.4.3: Raketen & Abwehr direkt in der Flottenkarte ===== */
