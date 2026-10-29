@@ -2584,6 +2584,79 @@ onTap=function(x,y){
  return _ot(x,y)};
 const _odb=onDouble;onDouble=function(x,y){if(placing==='aa')return;return _odb(x,y)};
 })();
+
+/* ===== v4.4.5: 0,5x-Tempo, Bot-Flak-Cluster + Flak-Schild-Kombis, aktivere Bot-Kriege ===== */
+(function(){
+/* --- 1) Geschwindigkeit: 0,5x / 1x / 2x / 4x / 10x --- */
+const SPD=[.5,1,2,4,10],spdLbl=v=>(v===.5?'0,5':String(v))+'x';
+function syncSpd(){const b=$('speedBtn');if(!b)return;const t=spdLbl(S.gs);if(b.textContent!==t)b.textContent=t;
+ b.title='Spielgeschwindigkeit 0,5x / 1x / 2x / 4x / 10x – wirkt auf Produktion, Forschung und Flotten (Klick = wechseln)'}
+cycleSpeed=function(){const i=SPD.indexOf(S.gs);S.gs=SPD[i<0?1:(i+1)%SPD.length];syncSpd()};
+setInterval(syncSpd,500);syncSpd();
+
+/* --- 2) Bots: mehrere Flaks je Planet (gleichmäßig verteilt) + Flak-Schild-Kombis --- */
+const TAU=6.2832;
+function angFree(pid,cap){const ex=S.xa.filter(a=>a.pid===pid).map(a=>a.ang),base=(pid%9)*.35;
+ for(let k=0;k<cap;k++){const a=base+k*TAU/cap;
+  if(!ex.some(e=>Math.abs((((e-a+Math.PI)%TAU)+TAU)%TAU-Math.PI)<.9*Math.PI/cap))return a}
+ return null}
+const threatened=p=>nearby(p.x,p.y,6000,e=>e.owner!==p.owner&&!e.dead&&(e.owner>0||e.placed)&&basePower(e.ships)>600).length>0;
+function fortify(ai){
+ ensureAD();ensureX();if(ai.dead||ai.planets<1)return;
+ const lv=ELV(ai),def=ai.style==='def',u=unl(ai,'flak');if(u<=0||(ai.dbank||0)<300)return;
+ const cap=Math.max(1,Math.min(8,Math.ceil((def?3+Math.floor(ai.tech/3)+lv:2+Math.floor(ai.tech/4)+lv)*u)));
+ const own=planets.filter(p=>p.owner===ai.id);if(!own.length)return;
+ const cnt={};for(const a of S.xa)if(a.o===ai.id)cnt[a.pid]=(cnt[a.pid]||0)+1;
+ const totF=Object.values(cnt).reduce((s,x)=>s+x,0),maxF=Math.ceil(ai.planets*(def?1.3:.8)*u)+2;if(totF>=maxF)return;
+ const hp=planets[ai.home];
+ const sc=p=>(threatened(p)?-100:0)+(hp&&p.id===hp.id?-20:0)+(cnt[p.id]||0)*3+Math.random()*2;
+ const cand=own.filter(p=>(cnt[p.id]||0)<cap).sort((a,b)=>sc(a)-sc(b));if(!cand.length)return;
+ const p=cand[0],c=cnt[p.id]||0;let n=Math.min(cap-c,threatened(p)?3:2,Math.floor(ai.dbank/300),maxF-totF);
+ if(!c&&n<2&&def)n=Math.min(n,1);
+ for(let k=0;k<n;k++){const a=angFree(p.id,cap);if(a===null)break;
+  S.xa.push({id:S.nextB=(S.nextB||0)+1,pid:p.id,ang:a,o:ai.id});ai.dbank-=300}
+ /* Kombi: Planet mit >=2 Flaks bekommt ein Schild über dem Flak-Ring */
+ const su=unl(ai,'shield');if(su<=0||ai.tech<2||ai.planets<2||Math.max(ai.bank||0,ai.dbank||0)<700)return;
+ const myS=S.xs.filter(s=>s.o===ai.id),sCap=Math.max(1,Math.floor(Math.min(3+lv*3,2+Math.floor(ai.planets/2))*su));if(myS.length>=sCap)return;
+ const cn2={};for(const a of S.xa)if(a.o===ai.id)cn2[a.pid]=(cn2[a.pid]||0)+1;
+ const tgt=own.filter(q=>(cn2[q.id]||0)>=2&&!myS.some(s=>Math.hypot(s.x-q.x,s.y-q.y)<SH_R*.8)).sort((x,y)=>(cn2[y.id]||0)+(threatened(y)?5:0)-(cn2[x.id]||0)-(threatened(x)?5:0))[0];
+ if(!tgt)return;const a=Math.random()*TAU,x=tgt.x+Math.cos(a)*60,y=tgt.y+Math.sin(a)*60;
+ if(aiStartDrop(ai,'s',x,y)){if((ai.dbank||0)>=600)ai.dbank-=600;else ai.bank-=600}}
+let _ft=0,_fp=0;
+function fortTick(g){_ft+=g;if(_ft<4)return;_ft=0;if(!AIS.length)return;
+ for(let n=0;n<6;n++){const ai=AIS[_fp=(_fp+1)%AIS.length];if(!ai||ai.dead||S.T<(ai.fortAt||0))continue;
+  ai.fortAt=S.T+(ai.style==='def'?12:22)+Math.random()*14;try{fortify(ai)}catch(e){console.warn(e)}}}
+
+/* --- 3) Bot-Kriege: Kriegserklärungen, Gegenschläge, Ausnutzen schwacher Nachbarn --- */
+let _wt=0,_wl=-99;
+function minDist(A,B){let d=1e18;const sa=Math.max(1,Math.floor(A.length/8)),sb=Math.max(1,Math.floor(B.length/8));
+ for(let i=0;i<A.length;i+=sa)for(let j=0;j<B.length;j+=sb){const e=Math.hypot(A[i].x-B[j].x,A[i].y-B[j].y);if(e<d)d=e}return d}
+function warTick(g){_wt+=g;if(_wt<8)return;_wt=0;if(S.T<500)return;
+ const grp={};for(const p of planets)if(p&&p.owner>0)(grp[p.owner]||(grp[p.owner]=[])).push(p);
+ const alive=AIS.filter(a=>!a.dead&&grp[a.id]&&grp[a.id].length);if(alive.length<2)return;
+ const pw={};for(const f of fleets)if(f.owner>0&&!f.dead)pw[f.owner]=(pw[f.owner]||0)+fleetPower(f);
+ for(const ai of alive){
+  const foe=ai.wFoe?AIS[ai.wFoe-1]:null;
+  if(foe&&!foe.dead&&S.T<(ai.wUntil||0)){
+   if(grudgeVal(ai,foe.id)<3)grudgeAdd(ai,foe.id,.6);
+   if((ai.revAt||0)>S.T+20)ai.revAt=S.T+8+Math.random()*10;
+   if((ai.huntAt||0)>S.T+25)ai.huntAt=S.T+8+Math.random()*12;
+   continue}
+  if(ai.wFoe){ai.wFoe=0;ai.wRest=S.T+100+Math.random()*220}
+  if(S.T<(ai.wRest||0))continue;
+  const pers=ai.pers==='rusher'?1.6:ai.pers==='turtle'?.35:1;
+  if(Math.random()>.3*(ai.style==='def'?.5:1)*pers)continue;
+  let best=null,bs=1e18;
+  for(let k=0;k<6;k++){const o=alive[Math.floor(Math.random()*alive.length)];if(o===ai)continue;
+   const d=minDist(grp[ai.id],grp[o.id]);if(d>16*CELL)continue;
+   const s=d*(.6+Math.min(2.5,(pw[o.id]||1)/Math.max(1,pw[ai.id]||1)));if(s<bs){bs=s;best=o}}
+  if(!best)continue;
+  ai.wFoe=best.id;ai.wUntil=S.T+360+Math.random()*540;
+  grudgeAdd(ai,best.id,2.2);grudgeAdd(best,ai.id,1.6);
+  if(S.T-_wl>20){_wl=S.T;const hp=planets[ai.home]||grp[ai.id][0];addLog('[KRIEG] '+ai.name+' erklärt '+best.name+' den Krieg!',hp.x,hp.y)}}}
+
+const _xt=xTick;xTick=function(g){_xt(g);try{fortTick(g);warTick(g)}catch(e){console.warn(e)}};
+})();
 </script>
 </body>
 
