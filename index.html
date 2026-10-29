@@ -346,6 +346,7 @@ SHIPS.push(
  {id:'siege',name:'Belagerungsschiff',power:1100,cost:{steel:3000,coal:900,crystals:700},spd:42,pw:105,req:'siege_eng',icon:'fa-bomb'},
  {id:'command',name:'Kommandoschiff',power:3800,cost:{steel:10000,copper:3600,crystals:2600,diamonds:300},spd:38,pw:290,req:'command_ships',icon:'fa-chess-king'},
  {id:'annihilator',name:'Vernichter',power:8000,cost:{steel:26000,crystals:8000,diamonds:1500},spd:31,pw:560,req:'annihilator',icon:'fa-radiation'});
+SHIPS.forEach(s=>{const p=s.power;s.power=Math.round(p*(p<=400?1:p<=1200?1.25:p<=3000?1.6:p<=5000?2:2.4))});
 SHIPS.sort((a,b)=>a.power-b.power);
 const TIERMAX=SHIPS.length-1;
 /* --- Gacha-Superschiffe (20) --- */
@@ -1163,7 +1164,7 @@ function aiStealth(ai){if(ai.dead||!ai.planets||STL_IDX<0)return;const lv=ELV(ai
  ai.bank-=n*SHIP.stealth.power;const f=newFleet(ai.id,ai.name+' Schattenstaffel',{stealth:n},true,hp.x+(Math.random()-.5)*200,hp.y+(Math.random()-.5)*200);f.ax=f.x;f.ay=f.y}
 /* --- Bot-Freischaltung (Spielzeit in s): Spieler bekommt Zeit zum Aufbau --- */
 /* Menschenähnlich: jeder Bot hat Persönlichkeit, eigenes Forschungstempo und reagiert auf Bedrohung */
-const NEED={flak:7,mine:10,rk:13,shield:15},MINT={flak:1100,mine:1800,rk:2700,shield:3400};
+const NEED={flak:7,mine:10,rk:17,shield:15},MINT={flak:1100,mine:1800,rk:4800,shield:3400};
 function unl(ai,k){if(!ai.pers){ai.pers=ai.style==='def'?(Math.random()<.6?'turtle':'balanced'):(Math.random()<.5?'rusher':'boomer');ai.lag=Math.floor(Math.random()*3)}
  if(S.T<(MINT[k]||600)||(ai.planets<2&&k!=='flak'))return 0;
  const need=Math.max(1,NEED[k]+ai.lag+(ai.pers==='turtle'?-2:ai.pers==='rusher'?2:0)-Math.round((ai.thr||0)*3));
@@ -1235,7 +1236,7 @@ function eliteBuild(ai,lvl){const R=Math.random,hp=planets[ai.home],T=Math.min(T
  ai.bank=(ai.bank||0)+K.bank;ai.expAt=Math.min(ai.expAt,S.T+120)}
 
 const mineCap=()=>MINE_BASE+tb('mcap'),aaSlots=()=>AA_BASE+tb('fslot'),aaPos=a=>{const p=planets[a.pid];return{x:p.x+Math.cos(a.ang)*AA_D,y:p.y+Math.sin(a.ang)*AA_D}};
-const placeHint=()=>placing==='shield'?window.xShHint():placing==='mine'?`Weltraummine (${S.stock.mine} im Vorrat): Eigene Flotte anklicken, dann Doppelklick auf den Zielort = Flotte fliegt hin und legt die Mine • Esc = beenden`:`Flak-Plattform (${S.stock.aa} im Vorrat): Doppelklick auf einen eigenen Planeten = platzieren • Esc = beenden`;
+const placeHint=()=>placing==='shield'?window.xShHint():placing==='mine'?`Weltraummine (${S.stock.mine} im Vorrat): Eigene Flotte anklicken, dann Doppelklick auf den Zielort = Flotte fliegt hin und legt die Mine • Esc = beenden`:`Flak-Plattform (${S.stock.aa} im Vorrat): Tippe auf einen eigenen Planeten = platzieren • Esc = beenden`;
 function buildDef(k,n){ensureB();const c=shipCost({cost:k==='mine'?MINE_COST:AA_COST}),tot={};for(const q in c)tot[q]=c[q]*n;if(!canPay(tot)){toast('Nicht genug Ressourcen.');return}pay(tot);S.stock[k]+=n;playSound('ok');refreshUI()}
 function deployMine(f){ensureB();f.order=null;
  if(!S.stock.mine){toast('Keine Mine im Vorrat – Auftrag abgebrochen.');return}
@@ -1244,7 +1245,7 @@ function deployMine(f){ensureB();f.order=null;
  const id=S.nextB=(S.nextB||0)+1;S.mines.push({id,x:f.x,y:f.y,t0:S.T+6});S.stock.mine--;
  FX.push({k:'boom',t0:performance.now(),dur:400,x1:f.x,y1:f.y,s:14,c:'#fbbf24'});
  toast(f.name+' hat eine Mine abgelegt ('+S.mines.length+'/'+mineCap()+'). Scharf in wenigen Sekunden.');playSound('ok');refreshUI()}
-function armBuild(k){ensureB();if(!S.stock[k]){toast('Kein Vorrat – zuerst bauen.');return}closeModal();placing=k;setActive(k==='mine'?activeFleet:null);toast(k==='mine'?'Klicke eine eigene Flotte an (sie transportiert die Mine), dann Doppelklick auf den Zielort.':'Doppelklick auf einen eigenen Planeten = Flak platzieren')}
+function armBuild(k){ensureB();if(!S.stock[k]){toast('Kein Vorrat – zuerst bauen.');return}closeModal();placing=k;setActive(k==='mine'?activeFleet:null);toast(k==='mine'?'Klicke eine eigene Flotte an (sie transportiert die Mine), dann Doppelklick auf den Zielort.':'Tippe auf einen eigenen Planeten = Flak platzieren')}
 function placeDef(sx,sy){ensureB();const k=placing;if(!S.stock[k]){placing=null;setActive(null);return}
  const [wx,wy]=s2w(sx,sy);
  if(k==='mine'){if(S.mines.length>=mineCap()){toast('Minen-Limit erreicht ('+mineCap()+').');return}
@@ -1252,7 +1253,7 @@ function placeDef(sx,sy){ensureB();const k=placing;if(!S.stock[k]){placing=null;
   const tx=clamp(wx,-HALF+100,HALF-100),ty=clamp(wy,-HALF+100,HALF-100);f.guard=null;f.retreat=false;f.order={type:'mine',x:tx,y:ty};
   toast(f.name+' transportiert die Mine zum Zielort.');placing=null;setActive(f.id);playSound('ok');refreshUI();return}
  else{let pl=null,bd=1e9;for(const i of PS){const p=planets[i],d=Math.hypot(p.x-wx,p.y-wy);if(d<=Math.max(p.r*1.5,28/cam.zoom)&&d<bd){bd=d;pl=p}}
-  if(!pl){toast('Flak nur auf eigenen Planeten – Doppelklick direkt auf den Planeten.');return}
+  if(!pl){toast('Flak nur auf eigenen Planeten – tippe direkt auf den Planeten.');return}
   const used=S.aa.filter(a=>a.pid===pl.id);if(used.length>=aaSlots()){toast('Alle '+aaSlots()+' Flak-Plätze dieses Planeten sind belegt.');return}
   const id=S.nextB=(S.nextB||0)+1;S.aa.push({id,pid:pl.id,ang:.6+used.length*.8});S.stock.aa--;toast('Flak-Plattform auf '+pl.name+' platziert.')}
  playSound('ok');if(!S.stock[k])placing=null;setActive(null);refreshUI()}
@@ -1394,7 +1395,7 @@ function rGacha(){const p=S.pity,tab=S.gtab||'pull',sh=SHIPS.filter(s=>s.g).sort
  let h=`<div class="flex flex-wrap items-center gap-1.5 mb-3"><span class="text-fuchsia-300 font-bold text-sm mr-2"><i class="fa-solid fa-circle-nodes"></i> ${fmt(S.gems)} Tokens</span>${tabs.map(([k,n])=>`<button onclick="S.gtab='${k}';renderModal()" class="px-3 py-1.5 rounded border text-[11px] font-orbitron ${tab===k?'bg-amber-900/50 border-amber-400 text-white':'bg-slate-900 border-slate-700 text-slate-300'}">${n}</button>`).join('')}</div>`;
  const bar=(l,v,m,c)=>`<div class="mb-1.5"><div class="flex justify-between text-[10px]"><span>${l}</span><span>${v}/${m}</span></div><div class="bar"><div style="width:${Math.min(100,v/m*100)}%;background:${c}"></div></div></div>`;
  if(tab==='pull'){
-  h+=`<div class="grid md:grid-cols-2 gap-3">`+card(`<div class="flex gap-1 mb-2">${btn('Standard',`S.banner='std';renderModal()`,S.banner==='up'?'slate':'amber')}${btn('Rate-Up',`S.banner='up';renderModal()`,S.banner==='up'?'amber':'slate')}</div>${S.banner==='up'?`<div class="text-amber-300 font-orbitron"><i class="fa-solid ${ft.icon}"></i> ${ft.name}</div><div class="text-slate-400">Legendär-Treffer sind zu 50% dieses Schiff (Stärke ${fmt(ft.power)}). Rotiert wöchentlich.</div>`:'<div class="text-slate-300">Standard-Banner: 20 Superschiffe in 4 Seltenheitsstufen. Sie sind weit stärker als jedes baubare Schiff (Titan-Flaggschiff: '+fmt(ord.power)+').</div>'}<div class="mt-2 text-fuchsia-300">Mythisch: <b>Grim Reaper</b> – ${fmt(SHIPS.find(s=>s.r==='M').power)} Stärke (ca. 6× das stärkste Legendär-Schiff)</div>`)
+  h+=`<div class="grid md:grid-cols-2 gap-3">`+card(`<div class="flex gap-1 mb-2">${btn('Standard',`S.banner='std';renderModal()`,S.banner==='up'?'slate':'amber')}${btn('Rate-Up',`S.banner='up';renderModal()`,S.banner==='up'?'amber':'slate')}</div>${S.banner==='up'?`<div class="text-amber-300 font-orbitron"><i class="fa-solid ${ft.icon}"></i> ${ft.name}</div><div class="text-slate-400">Legendär-Treffer sind zu 50% dieses Schiff (Stärke ${fmt(ft.power)}). Rotiert wöchentlich.</div>`:'<div class="text-slate-300">Standard-Banner: 20 Superschiffe in 4 Seltenheitsstufen. Sie sind stärker als gleich teure normale Schiffe, aber die großen Werftschiffe (Titan-Flaggschiff: '+fmt(ord.power)+') halten gut mit.</div>'}<div class="mt-2 text-fuchsia-300">Mythisch: <b>Grim Reaper</b> – ${fmt(SHIPS.find(s=>s.r==='M').power)} Stärke (ca. 6× das stärkste Legendär-Schiff)</div>`)
   +card(`<h4 class="font-orbitron text-amber-300 mb-2">Garantien (Pity)</h4>${bar('Legendär+ (Soft-Pity ab 70)',p.l,90,RAR.L.c)}${bar('Episch+',p.e,50,RAR.E.c)}${bar('Selten+ (Superschiff)',p.r,20,RAR.R.c)}${bar('Mythisch',p.m,500,RAR.M.c)}`)+`</div>`;
   h+=`<div class="grid sm:grid-cols-3 gap-2 mt-3">${CRATE.map((c,k)=>{const r=crateRates(k),sup=r.R+r.E+r.L+r.M;return `<div class="rounded-lg p-2.5 border-2 text-center" style="border-color:${c.col};background:rgba(2,6,23,.9)"><i class="fa-solid ${c.ic} text-3xl" style="color:${c.col}"></i><div class="font-orbitron text-xs mt-1" style="color:${c.col}">${c.n}</div><div class="text-amber-300 font-bold">${c.c} Tokens</div><div class="text-[11px] text-slate-400 my-1">${c.d}</div><div class="text-[10px] text-slate-500 mb-2">Superschiff-Chance ${(sup*100).toFixed(0)}%</div><div class="flex gap-1.5 justify-center">${btn('×1 · '+c.c,`gachaPull(1,${k})`,'amber',!S.dev&&S.gems<c.c)}${btn('×10 · '+c.c*9,`gachaPull(10,${k})`,'amber',!S.dev&&S.gems<c.c*9)}</div></div>`}).join('')}</div>
   <div class="flex flex-wrap items-center gap-2 mt-3 text-slate-400">Tokens kaufen: ${btn('+1 (6.000 Cr)','buyTokens(1)','emerald',!S.dev&&S.res.credits<6000)}${btn('+5 (30.000 Cr)','buyTokens(5)','emerald',!S.dev&&S.res.credits<30000)}<span>Kauflimit 10/Tag (heute ${(S.tkb&&S.tkb.d===dstr(new Date())?S.tkb.n:0)}/10). Weitere Tokens: Tagesbelohnung, Eroberungen, Siege.</span></div>`}
@@ -1600,11 +1601,11 @@ T('shield_hp','Schild-Energie','defense','+25% Schild-Energie je Stufe',{steel:2
 T('shield_rad','Schild-Radius','defense','+12% Schild-Radius je Stufe',{copper:2000,crystals:450},4,['shield_tech'],{shrad:.12});
 T('shield_cap','Schildgitter','defense','+2 Schild-Kapazität je Stufe',{steel:3500,crystals:900},5,['shield_hp:2'],{shcap:2});
 T('shield_reg','Schild-Regeneration','defense','+0,4% Energie/s je Stufe wenn unbeschossen',{copper:3000,crystals:700},5,['shield_hp:2'],{shreg:.004});
-T('rocket_tech','Raketensysteme','weapons','Schaltet zielsuchende Raketen frei (an Flotten montieren, nahe eigener Kolonie)',{steel:1200,copper:700,crystals:150},1,['flak_tech'],{});
+T('rocket_tech','Raketensysteme','weapons','Schaltet zielsuchende Raketen frei (an Flotten montieren, nahe eigener Kolonie)',{steel:12000,copper:7000,crystals:3000,diamonds:200},1,['flak_dmg:2','missile_tech'],{});
 T('rocket_dmg','Sprengköpfe','weapons','+20% Raketenschaden je Stufe',{steel:2600,crystals:500},5,['rocket_tech'],{rdmg:.2});
 T('rocket_rng','Raketenreichweite','weapons','+12% Reichweite je Stufe',{copper:2200,crystals:400},4,['rocket_tech'],{rrng:.12});
 T('rocket_slots','Raketenschächte','weapons','+1 Raketen-Slot je Flotte',{steel:4000,crystals:1200},3,['rocket_dmg:2'],{rslot:1});
-T('rd_tech','Raketenabwehr','defense','Schaltet Raketenabwehr für Flotten frei (jedes System fängt 1 Rakete ab, Bauzeit)',{steel:1000,copper:600,crystals:100},1,['flak_tech'],{});
+T('rd_tech','Raketenabwehr','defense','Schaltet Raketenabwehr für Flotten frei (jedes System fängt 1 Rakete ab, Bauzeit)',{steel:4500,copper:2800,crystals:900},1,['flak_dmg:1'],{});
 T('rd_cap','Abwehr-Slots','defense','+1 Abwehrsystem je Flotte',{steel:2500,crystals:500},6,['rd_tech'],{rdcap:1});
 T('rd_spd','Abwehr-Fertigung','defense','-12% Bauzeit der Abwehrsysteme',{copper:2400,crystals:450},5,['rd_tech'],{rdspd:.12});
 T('rd_acc','Abfang-Präzision','defense','+3% Abfangchance',{copper:3000,crystals:700},5,['rd_tech'],{rdacc:.03});
@@ -1656,7 +1657,7 @@ function rdAcc(o){return o===0?clamp(.8+tb('rdacc'),0,.97):.82+(AIS[o-1]?AIS[o-1
 function tryIntercept(r,t){const o=t.owner;if(o<0)return false;const ds=nearby(t.x,t.y,1100,f=>f.owner===o&&!f.dead&&f.rd>0);if(!ds.length)return false;
  const d=ds[0],nw=performance.now();d.rd--;FX.push({k:'shot',t0:nw,dur:220,x0:d.x,y0:d.y,x1:r.x,y1:r.y,c:'#22d3ee'});
  if(Math.random()<rdAcc(o)){FX.push({k:'boom',t0:nw+200,dur:350,x1:r.x,y1:r.y,s:16,c:'#67e8f9'});return true}return false}
-function rkImpact(r,t){const nw=performance.now();FX.push({k:'boom',t0:nw,dur:650,x1:r.x,y1:r.y,s:22+Math.min(40,r.d/250),c:'#fb923c'});FX.push({k:'wave',t0:nw,dur:700,x1:r.x,y1:r.y,s:220,c:'#fb923c'});
+function rkImpact(r,t){const nw=performance.now();FX.push({k:'boom',t0:nw,dur:650,x1:r.x,y1:r.y,s:22+Math.min(40,r.d/250),c:'#fb923c'});FX.push({k:'wave',t0:nw,dur:700,x1:r.x,y1:r.y,s:320,c:'#fb923c'});
  if(r.t.kind==='fleet'){const f=fleetById.get(r.t.id);if(f)hitFleet(f,r.d,1)}
  else{const p=planets[r.t.id],np=basePower(p.garrison);if(np>0){applyLoss([p.garrison],Math.min(.7,r.d/np));for(const k in p.garrison)if(p.garrison[k]<=0)delete p.garrison[k];p.dirty=true}}
  if(t.owner===0)addLog('[RAKETE] Einschlag bei '+t.name+'!',t.x,t.y);playSound('boom')}
@@ -1666,7 +1667,7 @@ function rkTick(g){for(let i=RKT.length-1;i>=0;i--){const r=RKT[i];
  const dx=t.x-r.x,dy=t.y-r.y,d=Math.hypot(dx,dy);let da=Math.atan2(dy,dx)-r.a;da=Math.atan2(Math.sin(da),Math.cos(da));r.a+=clamp(da,-RK_TURN*g,RK_TURN*g);
  r.v=Math.min(RK_V,r.v+RK_V*1.2*g);const st=r.v*g;r.x+=Math.cos(r.a)*st;r.y+=Math.sin(r.a)*st;r.life-=g;r.tr.push(r.x,r.y);if(r.tr.length>18)r.tr.splice(0,2);
  if(!r.ic&&d<RK_ICD){r.ic=1;if(tryIntercept(r,t)){RKT.splice(i,1);continue}}
- if(d<60||d<=st){rkImpact(r,t);RKT.splice(i,1)}}}
+ if(d<95||d<=st){rkImpact(r,t);RKT.splice(i,1)}}}
 function botTick(g){_b2+=g;if(_b2<3)return;_b2=0;
  for(const f of fleets){if(f.owner<=0||f.dead)continue;const ai=AIS[f.owner-1];if(!ai||ai.dead)continue;if(f.bk===undefined)f.bk=S.T+120+Math.random()*500;const pw=fleetPower(f);
   if(unl(ai,'rk')>0&&S.T>=f.bk&&pw>1500&&rkOk(f)){f.bk=S.T+300+Math.random()*500;if((ai.bank||0)>500){const sl=1+Math.floor(ai.tech/8)+ELV(ai);f.rk=f.rk||[];
@@ -2048,7 +2049,7 @@ function hitFk(q,d){const ai=q.o?AIS[q.o-1]:null,a=q.a;a.hp=(a.hp===undefined?FL
 function flaksOf(pid,d){const L=[...(S.aa||[]).filter(a=>a.pid===pid).map(a=>({a,o:0,L:S.aa})),...(S.xa||[]).filter(a=>a.pid===pid).map(a=>({a,o:a.o,L:S.xa}))];for(const q of L)hitFk(q,d)}
 function domeHit(r){if(r.o!==0)for(const s of S.sh||[])if(S.T>=s.t0&&Math.hypot(r.x-s.x,r.y-s.y)<=shR())return{s,o:0};
  for(const s of S.xs||[]){if(s.o===r.o||S.T<s.t0)continue;const ai=AIS[s.o-1];if(ai&&Math.hypot(r.x-s.x,r.y-s.y)<=SH_R*(1+ai.tech*.02))return{s,o:s.o}}return null}
-function aoe(r){const R=170,nw=performance.now(),o=r.o;FX.push({k:'boom',t0:nw,dur:650,x1:r.x,y1:r.y,s:40,c:'#fb923c'});FX.push({k:'wave',t0:nw,dur:700,x1:r.x,y1:r.y,s:R*1.3,c:'#fb923c'});
+function aoe(r){const R=250,nw=performance.now(),o=r.o;FX.push({k:'boom',t0:nw,dur:650,x1:r.x,y1:r.y,s:40,c:'#fb923c'});FX.push({k:'wave',t0:nw,dur:700,x1:r.x,y1:r.y,s:R*1.3,c:'#fb923c'});
  for(const f of nearby(r.x,r.y,R,e=>e.owner!==o&&!e.dead&&(e.owner>0||e.placed)&&basePower(e.ships)>0))hitFleet(f,r.d,1);
  const cx=cellX(r.x),cy=cellY(r.y);for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const p=planetAt(cx+dx,cy+dy);if(p&&p.owner!==o&&Math.hypot(p.x-r.x,p.y-r.y)<=R+p.r){planetHit(p,r.d*.6);flaksOf(p.id,r.d*.3)}}
  for(const s of [...(S.sh||[]).map(s=>({s,o:0})),...(S.xs||[]).map(s=>({s,o:s.o}))])if(s.o!==o&&Math.hypot(s.s.x-r.x,s.s.y-r.y)<=R+60)hitSh(s,r.d);
@@ -2059,6 +2060,7 @@ rkImpact=function(r,t){const k=r.t.kind;
  if(k==='shield'){const q=findSh(r.t.id);FX.push({k:'boom',t0:performance.now(),dur:600,x1:r.x,y1:r.y,s:26,c:'#38bdf8'});if(q)hitSh(q,r.d);playSound('boom');return}
  if(k==='flak'){const q=findFk(r.t.id);FX.push({k:'boom',t0:performance.now(),dur:600,x1:r.x,y1:r.y,s:26,c:'#e879f9'});if(q)hitFk(q,r.d);playSound('boom');return}
  if(k==='pos'){aoe(r);return}
+ if(k==='fleet'){const res=_ri9(r,t);for(const f of nearby(r.x,r.y,140,e=>e.owner!==r.o&&!e.dead&&e.id!==r.t.id&&(e.owner>0||e.placed)&&basePower(e.ships)>0))hitFleet(f,r.d*.5,1);return res}
  if(k==='planet'){const res=_ri9(r,t);flaksOf(r.t.id,r.d*.5);refreshUI();return res}
  return _ri9(r,t)};
 /* Reichweite: Ziel entkommt -> Rakete detoniert im Raum */
@@ -2179,7 +2181,7 @@ render=function(){_r9();try{if(!RK2)return;const R=RK2,f=fleetById.get(R.fid);if
 <script>
 /* ===== v3.9: Sound-System (synthetisiert, weich, mit Hall, Stereo-Position, Ambient-Pad) ===== */
 (function(){
-const AU={ctx:null,master:null,revIn:null,nb:null,vol:.7,amb:true,voices:0,last:{},padG:null,engG:null,engF:null,at:null,skipBoom:false,mute:{}};
+const AU={ctx:null,master:null,revIn:null,nb:null,vol:.7,amb:true,voices:0,last:{},padG:null,engG:null,engF:null,at:null,skipBoom:false,mute:{}};window.AU=AU;
 const CUR={v:1,pan:0,t:0,s:1};
 try{const v=localStorage.getItem('ge_vol');if(v!==null)AU.vol=Math.max(0,Math.min(1,parseFloat(v)));if(localStorage.getItem('ge_amb')==='0')AU.amb=false}catch(e){}
 const MIN={tap:30,hover:70,click:40,ok:60,boom:90,hit:25,alert:800,move:100,deny:150,laser:0};
@@ -2552,6 +2554,35 @@ RENDER.yard=function(){
   h+=xShieldHtml();
  }else h+=xRkYard();
  setBody(h)};
+})();
+</script>
+<script>
+/* ===== v4.4.4: Platzier-Popup (Beenden-Button), Flak per Einzeltipp ===== */
+(function(){
+const pop=document.createElement('div');pop.id='placePopup';
+pop.style.cssText='position:fixed;left:50%;top:max(8px,env(safe-area-inset-top));transform:translateX(-50%);z-index:100000;display:none;align-items:center;gap:10px;max-width:calc(100vw - 16px);width:max-content;padding:8px 12px;border-radius:10px;background:rgba(2,6,23,.97);border:1px solid #22d3ee;box-shadow:0 4px 24px rgba(0,0,0,.6);color:#a5f3fc;font-size:12px;line-height:1.3';
+pop.innerHTML='<i class="fa-solid fa-satellite-dish" style="color:#22d3ee"></i><span id="placeTxt" style="min-width:0"></span><button id="placeEnd" style="flex:none;min-height:40px;padding:4px 12px;border-radius:8px;border:1px solid #fb7185;background:#4c0519;color:#fff;font-weight:700;white-space:nowrap">Beenden</button>';
+document.body.appendChild(pop);
+window.endPlacing=function(){placing=null;try{setActive(null)}catch(e){}pop.style.display='none';try{toast('Platzierung beendet.')}catch(e){}try{refreshUI()}catch(e){}};
+$('placeEnd').addEventListener('click',e=>{e.stopPropagation();endPlacing()});
+const names={aa:'Flak',mine:'Mine',shield:'Schild'};
+function upd(){
+ if(!placing){pop.style.display='none';return}
+ let t;
+ if(placing==='aa')t='Flak platzieren: Tippe auf einen eigenen Planeten (Vorrat: '+(S.stock.aa||0)+')';
+ else{try{t=placeHint()}catch(e){t=(names[placing]||'Objekt')+' platzieren'}}
+ $('placeTxt').textContent=t;pop.style.display='flex';$('hintBar').classList.add('hidden')}
+setInterval(upd,200);
+/* Flak: ein Tipp auf einen eigenen Planeten platziert; kein Doppeltippen/Bewegen im Platziermodus */
+const _ot=onTap;
+onTap=function(x,y){
+ if(placing==='aa'){
+  const [wx,wy]=s2w(x,y);let hit=false;
+  for(const i of PS){const p=planets[i];if(p&&Math.hypot(p.x-wx,p.y-wy)<=Math.max(p.r*1.5,28/cam.zoom)){hit=true;break}}
+  if(hit){placeDef(x,y);upd();return}
+  return onClick(x,y)}
+ return _ot(x,y)};
+const _odb=onDouble;onDouble=function(x,y){if(placing==='aa')return;return _odb(x,y)};
 })();
 </script>
 </body>
