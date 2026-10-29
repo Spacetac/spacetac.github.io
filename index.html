@@ -2279,6 +2279,90 @@ if(typeof RENDER!=='undefined'&&RENDER.help){const _h=RENDER.help;RENDER.help=fu
 })();
 
 </script>
+<script>
+/* ===== v3.9.1: Superschiff-Wracks – zerstörte Superschiffe können repariert werden ===== */
+(function(){
+const WC={R:{steel:9000,crystals:3000,diamonds:150},E:{steel:16000,crystals:6000,diamonds:350},L:{steel:28000,crystals:11000,diamonds:800},M:{steel:40000,crystals:20000,diamonds:2000,credits:80000}};
+const gsnap=d=>{const o={};for(const t in d)if(d[t]>0&&SHIP[t]&&SHIP[t].g)o[t]=d[t];return o};
+let _wt=-1e9;
+function addW(id,n){if(!(n>0))return;S.wrecks=S.wrecks||{};S.wrecks[id]=(S.wrecks[id]||0)+n;
+ const t=performance.now();if(t-_wt>1500){_wt=t;toast(SHIP[id].name+' zerstört – Wrack in der Raumwerft reparierbar.')}
+ addLog('[WRACK] '+SHIP[id].name+' kann in der Raumwerft repariert werden.')}
+const wCost=id=>shipCost({cost:WC[SHIP[id].r]});
+
+const _al=applyLoss;
+applyLoss=function(dicts){const mine=new Set();for(const f of fleets)if(f.owner===0)mine.add(f.ships);
+ const snaps=[];for(const d of dicts)if(mine.has(d))snaps.push([d,gsnap(d)]);
+ const r=_al.apply(this,arguments);
+ for(const [d,b] of snaps)for(const t in b){const l=b[t]-(d[t]||0);if(l>0)addW(t,l)}
+ return r};
+const _hf=hitFleet;
+hitFleet=function(f){const b=f&&f.owner===0?gsnap(f.ships):null;const r=_hf.apply(this,arguments);
+ if(b)for(const t in b){const l=b[t]-(f.ships[t]||0);if(l>0)addW(t,l)}return r};
+
+window.repairShip=function(id,n){const w=S.wrecks||{};n=Math.min(n,w[id]||0);if(n<=0||!SHIP[id])return;
+ const c=wCost(id),tot={};for(const k in c)tot[k]=c[k]*n;
+ if(powerUsed()+SHIP[id].pw*n>powerCap()){toast('Nicht genug Energie für die Reparatur.');return}
+ if(!canPay(tot)){toast('Nicht genug Ressourcen.');return}
+ pay(tot);w[id]-=n;if(w[id]<=0)delete w[id];S.hangar[id]=(S.hangar[id]||0)+n;
+ playSound('ok');if(window.SOUND)SOUND.play('rdone',{v:.7});
+ toast(n+'× '+SHIP[id].name+' repariert – im Hangar.');addLog('[REPARATUR] '+n+'× '+SHIP[id].name+' repariert.');refreshUI()};
+
+function wHtml(){const w=S.wrecks||{},ids=Object.keys(w).filter(id=>w[id]>0&&SHIP[id]).sort((a,b)=>SHIP[b].power-SHIP[a].power);
+ if(!ids.length)return '';
+ return '<h3 class="font-orbitron text-amber-300 mt-4 mb-2"><i class="fa-solid fa-screwdriver-wrench"></i> WRACKS – SUPERSCHIFFE REPARIEREN</h3><div class="text-slate-400 mb-1">Zerstörte Superschiffe gehen nicht verloren. Repariert landen sie im Hangar und brauchen wieder Energie.</div><div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">'
+ +ids.map(id=>{const s=SHIP[id],c=wCost(id),col=RAR[s.r].c;
+  return card(`<div style="color:${col}"><i class="fa-solid ${s.icon}"></i> <b>${s.name}</b> ×${w[id]}</div><div class="text-slate-400">Stärke ${fmt(s.power)} • Energie ${s.pw}</div><div class="my-1">${costHtml(c)} <span class="text-slate-500">je Schiff</span></div><div class="flex gap-1">${btn('Reparieren ×1',`repairShip('${id}',1)`,'emerald',!canPay(c))}${w[id]>1?btn('Alle ('+w[id]+')',`repairShip('${id}',${w[id]})`,'amber'):''}</div>`)}).join('')+'</div>'}
+function addPanel(){if(!curModal||(curModal!=='yard'&&curModal!=='fleets'))return;const b=document.getElementById('modalBody');if(!b)return;
+ const old=document.getElementById('wreckPanel');if(old)old.remove();const h=wHtml();if(!h)return;
+ const d=document.createElement('div');d.id='wreckPanel';d.innerHTML=h;b.appendChild(d)}
+for(const k of ['yard','fleets']){const o=RENDER[k];RENDER[k]=function(){o();addPanel()}}
+})();
+
+</script>
+<script>
+/* ===== v3.9.2: Angriffswarnungen als überlappender Benachrichtigungs-Stapel (wie am Handy) ===== */
+let AL_X=false;
+function alRender(){const now=S.T;
+ for(let i=ALS.length-1;i>=0;i--){const a=ALS[i],m=a.meta;
+  if(m){const att=fleetById.get(m.aid);if(att&&!att.dead){const tg=m.kind==='fleet'?fleetById.get(m.id):planets[m.id];if(tg){const eta=Math.max(0,Math.round(Math.hypot(tg.x-att.x,tg.y-att.y)/fleetSpeed(att)/S.gs));a.text=a.text.replace(/Ankunft in ca\. \d+ s/,'Ankunft in ca. '+eta+' s')}}if(m.kind==='fleet'){const tp=fleetById.get(m.id);if(tp&&!tp.dead){a.x=tp.x;a.y=tp.y}}
+   if(!att||att.dead||!att.order||att.order.type!=='atk'||att.order.id!==m.id||now-a.t>900)ALS.splice(i,1)}
+  else if(now-a.t>(/abgewehrt/i.test(a.text)?6:25))ALS.splice(i,1)}
+ const box=alBox(),list=ALS.slice(-6).reverse(),n=list.length;
+ box.style.cssText='position:absolute;top:calc(var(--hh,90px) + 48px);left:50%;transform:translateX(-50%);width:min(92vw,28rem);z-index:30;pointer-events:none';
+ if(n<2)AL_X=false;
+ /* nicht mehr angezeigte Karten entfernen */
+ for(const ch of Array.from(box.children)){if(ch.id==='alCollapse')continue;if(!ch._a||!list.includes(ch._a)){ch.remove()}}
+ const cards=list.map(a=>{if(!a.el)a.el=alCard(a);const d=a.el;d._a=a;a.lbl.textContent=(a.meta?'⚠ ':'ℹ ')+a.text;
+  if(!d.isConnected){d.style.opacity='0';d.style.transform='translateY(-18px) scale(.96)';box.appendChild(d);void d.offsetHeight}return d});
+ for(const d of cards)d.style.height='auto';
+ const hF=cards[0]?cards[0].offsetHeight:0;
+ let ctl=document.getElementById('alCollapse');
+ if(AL_X&&n>1){if(!ctl){ctl=document.createElement('div');ctl.id='alCollapse';ctl.style.cssText='position:absolute;left:0;right:0;text-align:center;font-size:11px;color:#fda4af;cursor:pointer;pointer-events:auto;padding:2px 0;transition:top .25s ease';ctl.onclick=()=>{AL_X=false;alRender()};box.appendChild(ctl)}
+  ctl.textContent='▲ Einklappen'+(ALS.length>6?' • +'+(ALS.length-6)+' weitere':'')}
+ else if(ctl)ctl.remove();
+ let y=0;
+ cards.forEach((d,i)=>{const a=d._a;a.bdg.textContent='+'+(n-1);a.bdg.style.display=(!AL_X&&i===0&&n>1)?'':'none';
+  if(AL_X){const h=d.offsetHeight;d.style.top=y+'px';d.style.transform='none';d.style.opacity='1';d.style.zIndex=40-i;d.style.pointerEvents='auto';d.style.overflow='';
+   for(const c of d.children)c.style.visibility='';y+=h+6}
+  else if(i<4){d.style.height=hF+'px';d.style.top=i*9+'px';d.style.transform='scale('+(1-i*.045).toFixed(3)+')';d.style.opacity=String(Math.max(.3,1-i*.22));d.style.zIndex=40-i;d.style.pointerEvents='auto';d.style.overflow='hidden';
+   for(const c of d.children)c.style.visibility=i?'hidden':''}
+  else{d.style.top='27px';d.style.transform='scale(.86)';d.style.opacity='0';d.style.pointerEvents='none'}});
+ if(AL_X){const ctl2=document.getElementById('alCollapse');if(ctl2){ctl2.style.top=y+'px';y+=20}box.style.height=Math.max(0,y-6)+'px'}
+ else box.style.height=(hF+Math.min(3,Math.max(0,n-1))*9)+'px'}
+function alCard(a){const d=document.createElement('div');
+ d.className='glass-panel-rose rounded-lg border border-rose-500/60 px-3 py-1.5 flex items-center justify-between shadow-2xl cursor-pointer';
+ d.style.cssText='position:absolute;left:0;right:0;top:0;transition:top .28s ease,transform .28s ease,opacity .28s ease;transform-origin:top center;pointer-events:auto';
+ d.onclick=()=>{const front=ALS[ALS.length-1];if(!AL_X&&front!==a&&ALS.length>1){AL_X=true;alRender()}else jumpTo(a.x,a.y)};
+ const l=document.createElement('div');l.className='text-xs text-slate-200';d.appendChild(l);a.lbl=l;
+ const r=document.createElement('div');r.className='flex items-center';r.style.flex='none';
+ const bd=document.createElement('button');bd.className='text-[10px] text-rose-200 border border-rose-500/60 rounded-full px-1.5 ml-2';bd.style.display='none';bd.title='Alle Warnungen anzeigen';
+ bd.onclick=e=>{e.stopPropagation();AL_X=true;alRender()};a.bdg=bd;r.appendChild(bd);
+ if(a.meta){const b=document.createElement('button');b.className='px-2 py-1 rounded bg-rose-700 hover:bg-rose-600 text-white text-[11px] whitespace-nowrap ml-2';b.textContent='Rückzug';b.onclick=e=>{e.stopPropagation();lastAlert=a;doRetreat();alRemove(a)};r.appendChild(b)}
+ const x=document.createElement('button');x.className='text-rose-400 text-sm ml-2';x.textContent='✕';x.onclick=e=>{e.stopPropagation();alRemove(a)};r.appendChild(x);
+ d.appendChild(r);return d}
+
+</script>
 </body>
 
 </html>
