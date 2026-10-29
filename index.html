@@ -139,7 +139,7 @@ html{-webkit-text-size-adjust:100%}
  #resBar{order:0!important;width:auto!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-content:center;gap:2px 2px!important;font-size:11px!important}
  header>div:last-child{width:auto!important;display:grid!important;grid-template-columns:repeat(2,42px);grid-auto-rows:42px;gap:4px!important;justify-content:end}
  header>div:last-child button{min-width:0!important;min-height:0!important;width:42px;height:42px;padding:0!important;flex:none!important;font-size:15px}
- header button[onclick*="'search'"],header button[onclick*="'rank'"],header button[onclick*="'profile'"],header button[onclick*="'help'"],#audioBtn,#repBtn{display:none!important}
+ header button[onclick*="'search'"],header button[onclick*="'rank'"],header button[onclick*="'profile'"],header button[onclick*="'help'"],header button[onclick*="'settings'"],#audioBtn,#repBtn{display:none!important}
  #menuBtn{display:flex!important;align-items:center;justify-content:center}
  #speedBtn{font-size:12px!important}
 }
@@ -204,7 +204,7 @@ html{-webkit-text-size-adjust:100%}
     <button onclick="openModal('search')" title="Suche: Planeten und Flotten finden" class="p-2 bg-slate-900 border border-slate-700 hover:border-cyan-400 rounded text-cyan-400"><i class="fa-solid fa-magnifying-glass"></i></button>
     <button onclick="openModal('rank')" title="Galaxie-Rangliste: du gegen alle KI-Imperien" class="p-2 bg-slate-900 border border-slate-700 hover:border-amber-400 rounded text-amber-400"><i class="fa-solid fa-ranking-star"></i></button>
     <button onclick="toggleAudio()" id="audioBtn" title="Ton an/aus" class="p-2 bg-slate-900 border border-slate-700 rounded text-slate-300"><i class="fa-solid fa-volume-high"></i></button>
-    <button onclick="openModal('daily')" title="Tagesbelohnung abholen (Tokens, Credits, Rohstoffe)" class="p-2 bg-slate-900 border border-slate-700 hover:border-emerald-400 rounded text-emerald-400 relative"><i class="fa-solid fa-gift"></i><span id="dailyDot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500"></span></button><button onclick="openModal('profile')" title="Profil &amp; Spielstand" class="p-2 bg-slate-900 border border-slate-700 hover:border-sky-400 rounded text-sky-300"><i class="fa-solid fa-user-astronaut"></i></button><button onclick="openModal('help')" title="Hilfe" class="p-2 bg-slate-900 border border-slate-700 rounded text-slate-300"><i class="fa-solid fa-circle-question"></i></button><button onclick="toggleHdrMenu(event)" id="menuBtn" title="Mehr" class="p-2 bg-slate-900 border border-slate-700 rounded text-cyan-300 relative"><i class="fa-solid fa-ellipsis-vertical"></i><span id="menuDot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500"></span></button>
+    <button onclick="openModal('daily')" title="Tagesbelohnung abholen (Tokens, Credits, Rohstoffe)" class="p-2 bg-slate-900 border border-slate-700 hover:border-emerald-400 rounded text-emerald-400 relative"><i class="fa-solid fa-gift"></i><span id="dailyDot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500"></span></button><button onclick="openModal('profile')" title="Profil &amp; Spielstand" class="p-2 bg-slate-900 border border-slate-700 hover:border-sky-400 rounded text-sky-300"><i class="fa-solid fa-user-astronaut"></i></button><button onclick="openModal('help')" title="Hilfe" class="p-2 bg-slate-900 border border-slate-700 rounded text-slate-300"><i class="fa-solid fa-circle-question"></i></button><button onclick="openModal('settings')" title="Einstellungen" class="p-2 bg-slate-900 border border-slate-700 hover:border-cyan-400 rounded text-slate-300"><i class="fa-solid fa-gear"></i></button><button onclick="toggleHdrMenu(event)" id="menuBtn" title="Mehr" class="p-2 bg-slate-900 border border-slate-700 rounded text-cyan-300 relative"><i class="fa-solid fa-ellipsis-vertical"></i><span id="menuDot" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500"></span></button>
   </div>
 </header>
 
@@ -254,8 +254,7 @@ html{-webkit-text-size-adjust:100%}
   <button onclick="hdrAct('rank')"><i class="fa-solid fa-ranking-star text-amber-400"></i> Rangliste</button>
   <button onclick="hdrAct('profile')"><i class="fa-solid fa-user-astronaut text-sky-300"></i> Profil</button>
   <button onclick="hdrAct('help')"><i class="fa-solid fa-circle-question text-slate-300"></i> Hilfe</button>
-  <button onclick="hdrAct('audio')"><i id="mAud" class="fa-solid fa-volume-high text-slate-300"></i> Ton</button>
-  <button onclick="hdrAct('rep')"><i id="mRepI" class="fa-solid fa-file-lines text-rose-300"></i> <span id="mRepT">Berichte: an</span></button>
+  <button onclick="hdrAct('settings')"><i class="fa-solid fa-gear text-cyan-300"></i> Einstellungen</button>
 </div>
 <div id="fxFlash"></div><div id="tipBox"></div><div id="resPop" class="hidden glass-panel rounded-xl p-3 text-xs"></div>
 <div id="modalRoot" class="hidden fixed inset-0 z-40 bg-black/60 flex items-center justify-center p-2 md:p-6" onclick="if(event.target===this)closeModal()">
@@ -642,7 +641,7 @@ function aiGrow(ai){
 }
 function aiSpawnPlanet(ai){const own=[];for(const i of PS){const p=planets[i];if(p&&p.owner===ai.id)own.push(p)}if(!own.length)return aiHomePlanet(ai);const cp=planets[S.capital]||{x:0,y:0},pick=()=>own[Math.floor(Math.random()*own.length)],a=pick(),b=pick();return Math.hypot(b.x-cp.x,b.y-cp.y)<Math.hypot(a.x-cp.x,a.y-cp.y)?b:a}
 function aiHomePlanet(ai){const h=planets[ai.home];return h&&h.owner===ai.id?h:planets.find(p=>p.owner===ai.id)}
-const aiCap=ai=>(ai.style==='def'?6:8)+Math.floor(S.T/800*(.5+ai.skill))+Math.round(RUSH()*22)+Math.floor(SNOW(ai)*4000);
+const aiCap=ai=>Math.max(2,Math.round(((ai.style==='def'?6:8)+Math.floor(S.T/800*(.5+ai.skill))+Math.round(RUSH()*22)+Math.floor(SNOW(ai)*4000))*Math.pow(S.diff||1,.6)));
 const aggrOf=ai=>ai.aggr*(ai.style==='def'?1.3:.8)*(1-.4*SNOW(ai));
 function think(f){
  if(f.owner<=0||f.dead)return;const ai=AIS[f.owner-1];
@@ -727,7 +726,7 @@ const endPtr=e=>{const was=ptrs.size;ptrs.delete(e.pointerId);if(drag&&!drag.mov
 cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',endPtr);
 function zoomAt(sx,sy,f){const [wx,wy]=s2w(sx,sy);cam.zoom=clamp(cam.zoom*f,MINZ,MAXZ);cam.x=wx-(sx-W/2)/cam.zoom;cam.y=wy-(sy-H/2)/cam.zoom;clampCam()}
 cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,e.deltaY<0?1.15:.87)},{passive:false});
-function onTap(x,y){const now=performance.now();if(now-lastTap.t<(PICKR>16?450:350)&&Math.hypot(x-lastTap.x,y-lastTap.y)<(PICKR>16?40:24)){lastTap.t=0;onDouble(x,y)}else{lastTap={t:now,x,y};onClick(x,y)}}
+function onTap(x,y){const now=performance.now();if(now-lastTap.t<380&&Math.hypot(x-lastTap.x,y-lastTap.y)<(PICKR>16?40:24)){lastTap.t=0;onDouble(x,y)}else{lastTap={t:now,x,y};onClick(x,y)}}
 function pickAt(sx,sy){const [wx,wy]=s2w(sx,sy),z=cam.zoom;let best=null,bd=1e9;
  for(const f of fleets){if(f.dead||(f.owner===0&&!f.placed)||fleetVis(f)<.5)continue;const d=Math.hypot(f.x-wx,f.y-wy)*z;if(d<PICKR&&d<bd){bd=d;best={type:'fleet',id:f.id}}}
  if(best)return best;const cx=cellX(wx),cy=cellY(wy);
@@ -797,7 +796,7 @@ function render(){
  // Flotten
  for(const f of fleets){if(f.dead||(f.owner===0&&!f.placed)||f.hideUntil>performance.now())continue;const fv=fleetVis(f);if(fv<.04)continue;const [sx,sy]=w2s(f.x,f.y);if(sx<-20||sy<-20||sx>W+20||sy>H+20)continue;
   const s=clamp(5+z*5,5,12);const cloak=f.owner===0&&isStealthFleet(f);ctx.globalAlpha=cloak?.5:fv;if(cloak){ctx.strokeStyle='rgba(103,232,249,.7)';ctx.setLineDash([2,3]);ctx.lineWidth=1;ctx.beginPath();ctx.arc(sx,sy,s+8,0,6.283);ctx.stroke();ctx.setLineDash([])}if(f.owner>0){ctx.fillStyle='rgba(239,68,68,.28)';ctx.beginPath();ctx.arc(sx,sy,s+5,0,6.283);ctx.fill()}{const rc=fleetRarCol(f);if(rc)rarRing(sx,sy,s,rc)}tri(sx,sy,f.h,s);ctx.fillStyle=ownerColor(f.owner);ctx.fill();ctx.strokeStyle=f.owner===0?'#fff':'rgba(0,0,0,.6)';ctx.lineWidth=f.owner===0?1.5:1;ctx.stroke();
-  if(z>.5||f.owner===0&&z>.3){ctx.fillStyle=f.owner===0?'#a5f3fc':'#fca5a5';ctx.font='10px Rajdhani';ctx.textAlign='center';ctx.fillText(f.owner===0?f.name:fmt(fleetPower(f)),sx,sy-s-4)}
+  if(z>.5||f.owner===0&&z>.3){ctx.fillStyle=f.owner===0?'#a5f3fc':'#ef4444';ctx.font=(f.owner===0?'10px':'11px')+' Rajdhani';ctx.textAlign='center';ctx.fillText(f.owner===0?f.name:fmt(fleetPower(f)),sx,sy-s-4)}
   if(f.id===activeFleet){ctx.strokeStyle='#facc15';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(sx,sy,s+5,0,6.283);ctx.stroke()}ctx.globalAlpha=1}
  if(GH.length){const nw=performance.now();for(let i=GH.length-1;i>=0;i--){const g=GH[i];if(nw>=g.until){GH.splice(i,1);continue}const [gx,gy]=w2s(g.x,g.y),s=clamp(5+z*5,5,12);
   if(g.owner>0){ctx.fillStyle='rgba(239,68,68,.28)';ctx.beginPath();ctx.arc(gx,gy,s+5,0,6.283);ctx.fill()}
@@ -855,7 +854,7 @@ function renderTarget(force){
   act=p.owner===0?btn('<i class="fa-solid fa-gear"></i> Kolonie verwalten',`manageFromMap(${p.id})`)+btn('<i class="fa-solid fa-shield-halved"></i> Flotte zuweisen',`openGuard(${p.id})`,'emerald')+(p.id===S.capital?'<div class="text-[10px] text-amber-300">Hauptwelt – kann nicht erobert werden</div>':''):btn('<i class="fa-solid fa-crosshairs"></i> '+(p.owner===-1?'Erobern':'Angreifen'),`openAttack('planet',${p.id})`,'rose')}
  else{const f=fleetById.get(sel.id);if(!f||f.dead){closeTarget();return}
   type=f.owner===0?'EIGENE FLOTTE':'FREMDE FLOTTE';title=f.name;
-  det=`<div>Besitzer: <b style="color:${ownerColor(f.owner)}">${ownerName(f.owner)}</b></div><div>Position: [${Math.round(f.x)}, ${Math.round(f.y)}]</div><div>Stärke: <b class="text-cyan-300">${fmt(fleetPower(f))}</b> • Tempo ${Math.round(fleetSpeed(f))}</div><div>${shipsHtml(f.ships)}</div>`;
+  det=`<div>Besitzer: <b style="color:${ownerColor(f.owner)}">${ownerName(f.owner)}</b></div><div>Position: [${Math.round(f.x)}, ${Math.round(f.y)}]</div><div>Stärke: <b style="color:${f.owner===0?'#67e8f9':ownerColor(f.owner)}">${fmt(fleetPower(f))}</b> • Tempo ${Math.round(fleetSpeed(f))}</div><div>${shipsHtml(f.ships)}</div>`;
   if(f.order)det+=`<div class="text-amber-300">Status: ${f.order.type==='atk'?'Angriffsflug':f.order.type==='mine'?'Minentransport':'Unterwegs'}</div>`;if(f.guard!=null&&planets[f.guard])det+=`<div class="text-emerald-300">Bewacht ${planets[f.guard].name}</div>`;
   act=f.owner===0?btn('<i class="fa-solid fa-jet-fighter"></i> Flottenmenü',`openModal('fleets')`)+(f.order?btn('Befehl abbrechen',`recallFleet(${f.id})`,'amber'):''):btn('<i class="fa-solid fa-crosshairs"></i> Angreifen',`openAttack('fleet',${f.id})`,'rose')}
  panel.classList.remove('hidden');$('targetType').textContent=type;$('targetTitle').textContent=title;setHtml($('targetDetails'),det);setHtml($('targetActions'),act)}
@@ -1432,7 +1431,7 @@ function rHelp(){setBody(`<div class="space-y-2 text-slate-300 text-[13px]"><p><
 <p><b class="text-cyan-300">Forschung:</b> Dauert Zeit (nur eine gleichzeitig), hat Ebenen und Mehrfach-Voraussetzungen. Labore und Wissenschafts-Techs beschleunigen.</p>
 <p><b class="text-cyan-300">Schiffe anheuern &amp; Daily:</b> Warp-Tokens gibt es täglich, bei Siegen und per Credits. Superschiffe sind extrem stark.</p>
 <p><b class="text-cyan-300">Ressourcen-Info:</b> Klicke oben in der Leiste auf eine Ressource – du siehst Produktion pro Minute, woher du sie bekommst und wofür du sie brauchst. Fahre mit der Maus über Buttons, Planeten und Flotten für Tooltips.</p>
-<p><b class="text-cyan-300">Gegner-Verteidigung:</b> KI-Imperien bauen ebenfalls Minen und Flak-Plattformen (violett dargestellt – deine Minen sind gelb-orange, deine Flaks blau). Elite-Imperien (◆ mittel, ★ stark, ★★ sehr stark) haben sich weit ausgebreitet, besitzen mehr und größere Flotten und rüsten schneller auf – ideale Gegner für das späte Spiel. Ländergrenzen: dein Gebiet ist leicht blau mit markanterer Grenze, Gegner sind dezent rot, neutrale Gebiete grau (änderbar im Hilfe-Menü). Tarn-Jäger-Flotten sind für Gegner erst kurz vor ihrem Ziel sichtbar – deine eigenen erscheinen halbtransparent. Nahrung &amp; Wasser versorgen deine Kolonien: ein ausreichender Vorrat beider Güter steigert die Produktion aller anderen Planeten und deine Credits um bis zu +20 % (die Ressourcen-Leiste färbt sich bei knappem Vorrat gelb/rot). Pro Planet sind bis zu 8 Flak-Plattformen möglich (Forschung „Flak-Batterien“) rund um ihre Kolonien. Sie treffen nur deine Flotten – plane Angriffe also mit Abstand oder mit genug Reserve.</p></div><div class="flex gap-2 mt-4">${btn('Jetzt speichern',"save();toast('Gespeichert.')")}${btn('Profil & Spielstand',"openModal('profile')",'slate')}${btn('Screen-Effekte (Shake/Blitz): '+(FXCFG.on?'AN':'AUS'),'toggleFx()','slate')}${btn('Ländergrenzen: '+(BORD.on?'AN':'AUS'),'toggleBord()','slate')}${btn('Bot-Stärke: '+((S.diff||1)<1?'Leicht':(S.diff||1)>1?'Schwer':'Normal'),'cycleDiff()','amber')}</div>`)}
+<p><b class="text-cyan-300">Gegner-Verteidigung:</b> KI-Imperien bauen ebenfalls Minen und Flak-Plattformen (violett dargestellt – deine Minen sind gelb-orange, deine Flaks blau). Elite-Imperien (◆ mittel, ★ stark, ★★ sehr stark) haben sich weit ausgebreitet, besitzen mehr und größere Flotten und rüsten schneller auf – ideale Gegner für das späte Spiel. Ländergrenzen: dein Gebiet ist leicht blau mit markanterer Grenze, Gegner sind dezent rot, neutrale Gebiete grau (änderbar in den Einstellungen). Tarn-Jäger-Flotten sind für Gegner erst kurz vor ihrem Ziel sichtbar – deine eigenen erscheinen halbtransparent. Nahrung &amp; Wasser versorgen deine Kolonien: ein ausreichender Vorrat beider Güter steigert die Produktion aller anderen Planeten und deine Credits um bis zu +20 % (die Ressourcen-Leiste färbt sich bei knappem Vorrat gelb/rot). Pro Planet sind bis zu 8 Flak-Plattformen möglich (Forschung „Flak-Batterien“) rund um ihre Kolonien. Sie treffen nur deine Flotten – plane Angriffe also mit Abstand oder mit genug Reserve.</p></div><div class="flex gap-2 mt-4">${btn('Jetzt speichern',"save();toast('Gespeichert.')")}${btn('Profil & Spielstand',"openModal('profile')",'slate')}${btn('<i class="fa-solid fa-gear"></i> Einstellungen',"openModal('settings')",'slate')}</div>`)}
 RENDER.help=rHelp;
 
 /* --- Init --- */
@@ -1730,7 +1729,7 @@ function xFleetHtmlOld(){const mine=fleets.filter(f=>f.owner===0&&basePower(f.sh
 function xShieldHtml(){ensureX();const ok=S.lv.shield_tech>0,c=shipCost({cost:SH_COST});
  return '<h3 class="font-orbitron text-sky-300 mt-4 mb-2">SCHUTZSCHILDE</h3>'+card(`<div class="flex items-center gap-2 mb-1"><i class="fa-solid fa-shield-halved text-sky-400"></i><b class="font-orbitron text-white">Schutzschild</b></div><div class="text-slate-400">Hält gegnerische Flotten auf, bis es zerstört ist • Energie ${fmt(shHP())} • Radius ${Math.round(shR())} • nur im eigenen Gebiet • Vorrat <b>${S.stock.shield||0}</b> • Platziert <b>${S.sh.length}/${shCap()}</b></div><div class="my-1">${costHtml(c)}</div>`
   +(ok?`<div class="flex gap-1 flex-wrap">${btn('Bauen ×1',"buildDef('shield',1)")}${btn('×5',"buildDef('shield',5)")}${btn('Mit Flotte legen',"armBuild('shield')",'amber',!(S.stock.shield>0))}</div>`:`<div class="text-rose-400 cursor-pointer" onclick="gotoTechFromYard('shield_tech')"><i class="fa-solid fa-lock"></i> Benötigt: Schutzschilde (Klick)</div>`))}
-function xExtra(){if(!curModal||(curModal!=='fleets'&&curModal!=='yard'))return;const b=$('modalBody');let x=$('xExtra');if(!x||!x.isConnected||x._m!==curModal){if(x)x.remove();x=document.createElement('div');x.id='xExtra';x._m=curModal;b.appendChild(x)}setHtml(x,curModal==='fleets'?xFleetHtml():xYardHtml())}
+function xExtra(){if(!curModal||curModal!=='fleets')return;const b=$('modalBody');let x=$('xExtra');if(!x||!x.isConnected||x._m!==curModal){if(x)x.remove();x=document.createElement('div');x.id='xExtra';x._m=curModal;b.appendChild(x)}setHtml(x,curModal==='fleets'?xFleetHtml():xYardHtml())}
 {const _f=RENDER.fleets,_y=RENDER.yard;RENDER.fleets=function(){_f();xExtra()};RENDER.yard=function(){_y();xExtra()}}
 setInterval(()=>{try{if(curModal==='fleets')xExtra()}catch(e){}},700);
 function rkInstall(fid,t){const f=fleetById.get(fid);if(!f||!f.placed||!nearOwn(f.x,f.y)){toast('Raketen nur im eigenen Gebiet montierbar.');return}
@@ -2334,7 +2333,7 @@ wrap('toggleAudio',o=>function(){const r=o.apply(this,arguments);if(audioOn)play
 const LV=[0,.25,.5,.7,1];
 window.cycleVol=function(){let i=LV.findIndex(v=>Math.abs(v-AU.vol)<.01);i=(i+1)%LV.length;AU.vol=LV[i];try{localStorage.setItem('ge_vol',AU.vol)}catch(e){}if(AU.master)AU.master.gain.value=AU.vol;play('ok');renderModal()};
 window.toggleAmb=function(){AU.amb=!AU.amb;try{localStorage.setItem('ge_amb',AU.amb?'1':'0')}catch(e){}play('click');renderModal()};
-if(typeof RENDER!=='undefined'&&RENDER.help){const _h=RENDER.help;RENDER.help=function(){_h();const b=document.getElementById('modalBody');if(!b)return;let d=document.getElementById('audioCtl');if(!d||!d.isConnected){d=document.createElement('div');d.id='audioCtl';d.className='flex gap-2 mt-3 flex-wrap';b.appendChild(d)}
+if(false&&typeof RENDER!=='undefined'&&RENDER.help){const _h=RENDER.help;RENDER.help=function(){_h();const b=document.getElementById('modalBody');if(!b)return;let d=document.getElementById('audioCtl');if(!d||!d.isConnected){d=document.createElement('div');d.id='audioCtl';d.className='flex gap-2 mt-3 flex-wrap';b.appendChild(d)}
  setHtml(d,btn('<i class="fa-solid fa-volume-high"></i> Lautstärke: '+Math.round(AU.vol*100)+'%','cycleVol()','cyan')+btn('<i class="fa-solid fa-music"></i> Ambient-Musik: '+(AU.amb?'AN':'AUS'),'toggleAmb()','cyan'))}}
 })();
 
@@ -2467,7 +2466,7 @@ function drawLabels(){if(!BORD.on)return;refresh();const z=cam.zoom;
   const col=ownerColor(it.o),a=it.rank<=3?.62:.46;
   ctx.lineWidth=3;ctx.strokeStyle='rgba(2,6,23,.55)';
   ctx.globalAlpha=a;ctx.fillStyle=col;ctx.strokeText(name,it.sx,y+fs+1);ctx.fillText(name,it.sx,y+fs+1);
-  ctx.font='500 '+(fs-1.5)+'px Rajdhani,sans-serif';ctx.globalAlpha=a*.8;ctx.fillStyle='#94a3b8';
+  ctx.font='600 '+(fs-.5)+'px Rajdhani,sans-serif';ctx.globalAlpha=a;ctx.fillStyle=col;
   ctx.strokeText(l2,it.sx,y+fs*2+3);ctx.fillText(l2,it.sx,y+fs*2+3);ctx.globalAlpha=1}
  ctx.restore()}
 const _render=render;render=function(){_render.apply(this,arguments);try{drawLabels()}catch(e){}};
@@ -2487,18 +2486,73 @@ onClick=function(x,y){const o=pickAt(x,y);
 
 /* ===== v4.4.2: Doppelklick auf Ziele/Flak ohne vorheriges Öffnen der Infos; Hinweis-X ===== */
 (function(){
-let pend=null,hh=false,hp=null;const win=()=>(PICKR>16?450:350)+30;
+let pend=null,hh=false,hp=null;const win=()=>395;
 const _oc=onClick;
 onClick=function(x,y){clearTimeout(pend);pend=null;const o=pickAt(x,y);
  const own=o&&o.type==='fleet'&&(fleetById.get(o.id)||{}).owner===0;
  /* Mit aktiver Flotte oder im Platzier-Modus öffnet der Info-Dialog erst nach Ablauf des Doppelklick-Fensters */
  if(o&&!own&&(placing||activeFleet)){playSound('click');pend=setTimeout(()=>{pend=null;sel=o;renderTarget(true)},win());return}
  return _oc(x,y)};
-const _od=onDouble;onDouble=function(x,y){clearTimeout(pend);pend=null;return _od(x,y)};
+const _od=onDouble;onDouble=function(x,y){clearTimeout(pend);pend=null;const prev=sel,r=_od(x,y);if(sel!==prev)closeTarget();return r};
 const _sa=setActive;setActive=function(id){const r=_sa.apply(this,arguments);if(placing!==hp){hp=placing;hh=false}if(hh)$('hintBar').classList.add('hidden');return r};
 window.hideHint=function(){hh=true;$('hintBar').classList.add('hidden')};
 })();
 
+</script>
+
+<script>
+/* ===== v4.4.3: Einstellungen-Menü, Bot-Schwierigkeit, kompakte Werft ===== */
+(function(){
+const LV=[{n:'Sehr leicht',v:.5,d:'Bots wirtschaften und rüsten sehr langsam – zum Entspannen.'},
+ {n:'Leicht',v:.75,d:'Bots sind schwächer und haben weniger Flotten.'},
+ {n:'Normal',v:1,d:'Standard-Balance.'},
+ {n:'Schwer',v:1.3,d:'Bots haben mehr Einkommen und größere Flotten.'},
+ {n:'Extrem',v:1.7,d:'Bots wachsen deutlich schneller – du musst zügig expandieren.'},
+ {n:'Albtraum',v:2.2,d:'Bots rüsten extrem schnell auf. Nur für Profis.'}];
+const curLv=()=>{const d=S.diff||1;let b=0,bd=9;LV.forEach((l,i)=>{const x=Math.abs(l.v-d);if(x<bd){bd=x;b=i}});return b};
+window.setDiff=function(i){S.diff=LV[i].v;try{save()}catch(e){}toast('Bot-Schwierigkeit: '+LV[i].n);try{playSound('click')}catch(e){}renderModal()};
+TITLES.settings='EINSTELLUNGEN';
+const row=(ic,label,sub,ctl)=>'<div class="flex items-center justify-between gap-3 py-2 border-t border-slate-800 first:border-0" style="min-height:44px"><div class="min-w-0"><div class="text-slate-100 text-[13px]"><i class="fa-solid '+ic+' w-5 text-center text-cyan-300"></i> '+label+'</div>'+(sub?'<div class="text-[11px] text-slate-400 ml-5">'+sub+'</div>':'')+'</div>'+ctl+'</div>';
+const sw=(on,fn)=>'<button onclick="'+fn+'" class="shrink-0 px-3 py-1.5 rounded-full border text-[11px] font-orbitron '+(on?'bg-cyan-900/70 border-cyan-400 text-white':'bg-slate-900 border-slate-600 text-slate-400')+'" style="min-width:64px;min-height:36px">'+(on?'AN':'AUS')+'</button>';
+const sec=(t,ic,inner)=>card('<h4 class="font-orbitron text-xs text-amber-300 mb-1"><i class="fa-solid '+ic+'"></i> '+t+'</h4>'+inner,'mb-3');
+RENDER.settings=function(){
+ const c=curLv();
+ let h=sec('BOT-SCHWIERIGKEIT','fa-robot','<div class="grid grid-cols-3 gap-1.5 mt-2">'+LV.map((l,i)=>'<button onclick="setDiff('+i+')" class="py-2 rounded border text-[11px] font-orbitron '+(i===c?'bg-amber-900/60 border-amber-400 text-white':'bg-slate-900 border-slate-700 text-slate-300')+'" style="min-height:40px">'+l.n+'</button>').join('')+'</div><div class="text-[11px] text-slate-400 mt-2">'+LV[c].d+'</div>');
+ h+=sec('SPIEL','fa-gamepad',row('fa-file-lines','Kampfberichte','Aus: nur Meldung und Log',sw(S.rep!==false,"toggleReports();renderModal()")));
+ h+=sec('TON','fa-volume-high',row('fa-volume-high','Ton','Effekte an/aus',sw(audioOn,"toggleAudio();renderModal()"))
+  +row('fa-sliders','Lautstärke','',btn(Math.round(AU.vol*100)+'%',"cycleVol();renderModal()"))
+  +row('fa-music','Ambient-Musik','',sw(AU.amb,"toggleAmb();renderModal()")));
+ h+=sec('ANZEIGE','fa-display',row('fa-burst','Screen-Effekte','Kamera-Shake &amp; Blitz',sw(FXCFG.on,"toggleFx()"))
+  +row('fa-border-all','Ländergrenzen','Gebiete &amp; Bot-Namen auf der Karte',sw(BORD.on,"toggleBord()")));
+ h+=sec('SPIELSTAND','fa-floppy-disk','<div class="flex flex-wrap gap-2 py-1">'+btn('Jetzt speichern',"save();toast('Gespeichert.')")+btn('Profil &amp; Spielstand',"openModal('profile')",'slate')+btn('Neues Spiel','newGame()','rose')+'</div>');
+ setBody(h)};
+
+/* --- Werft: Tabs + einklappbare Zeilen --- */
+let YT='ships';const YO={};
+window.setYT=function(t){YT=t;renderModal();$('modalBody').scrollTop=0};
+window.togY=function(id){YO[id]=!YO[id];renderModal()};
+function shipRow(s){const c=shipCost(s),ok=canPay(c),o=YO[s.id];
+ return '<div class="mb-1.5 rounded-lg border border-slate-800 bg-slate-950/80"><div class="flex items-center gap-2 p-2"><div onclick="togY(\''+s.id+'\')" class="flex-1 min-w-0 cursor-pointer"><div class="flex items-center gap-1.5"><i class="fa-solid '+s.icon+' text-cyan-400"></i><b class="font-orbitron text-white text-[12px]">'+s.name+'</b><i class="fa-solid fa-chevron-'+(o?'up':'down')+' text-slate-500 text-[10px] ml-auto"></i></div><div class="text-[11px] text-slate-400">Stärke '+fmt(s.power)+' • Tempo '+s.spd+' • Energie '+s.pw+'</div></div>'+btn('×1',"buildShip('"+s.id+"',1)",'cyan',!ok)+'</div>'
+ +(o?'<div class="px-2 pb-2"><div class="mb-1 text-[11px]">'+costHtml(c)+'</div><div class="flex gap-1">'+btn('Bauen ×1',"buildShip('"+s.id+"',1)")+btn('×5',"buildShip('"+s.id+"',5)")+btn('×25',"buildShip('"+s.id+"',25)")+'</div></div>':'')+'</div>'}
+RENDER.yard=function(){
+ const cap=powerCap(),used=powerUsed();
+ const tabs=[['ships','Schiffe','fa-jet-fighter'],['def','Verteidigung','fa-shield-halved'],['rk','Raketen','fa-rocket']];
+ let h='<div class="flex gap-1 mb-2 sticky top-0 z-[1] py-1" style="background:rgba(2,6,23,.96)">'+tabs.map(t=>'<button onclick="setYT(\''+t[0]+'\')" class="flex-1 px-1 py-2 rounded border text-[11px] font-orbitron '+(YT===t[0]?'bg-cyan-900/60 border-cyan-400 text-white':'bg-slate-900 border-slate-700 text-slate-300')+'"><i class="fa-solid '+t[2]+'"></i> '+t[1]+'</button>').join('')+'</div>';
+ h+='<div class="mb-2 text-slate-300 text-[12px]">Energie: <b class="'+(used>cap?'text-rose-400':'text-yellow-300')+'">'+Math.floor(used)+'/'+Math.floor(cap)+'</b> • Hangar: <b class="text-amber-300">'+hangarCount()+'</b> Schiffe • Rabatt: <b class="text-emerald-300">'+pct(Math.min(.5,tb('cost')+.02*bsum('yard')))+'</b></div>';
+ if(YT==='ships'){
+  const av=SHIPS.filter(s=>!s.g&&unlocked(s)),lk=SHIPS.filter(s=>!s.g&&!unlocked(s));
+  h+=av.map(shipRow).join('');
+  if(lk.length){h+='<div onclick="togY(\'_lk\')" class="mt-2 p-2 rounded-lg border border-slate-800 text-slate-400 text-[12px] cursor-pointer flex justify-between"><span><i class="fa-solid fa-lock"></i> Gesperrt ('+lk.length+')</span><i class="fa-solid fa-chevron-'+(YO._lk?'up':'down')+'"></i></div>';
+   if(YO._lk)h+=lk.map(s=>'<div onclick="gotoTechFromYard(\''+s.req+'\')" class="mt-1 p-2 rounded-lg border border-slate-800 opacity-70 text-[11px] cursor-pointer"><i class="fa-solid '+s.icon+' text-slate-500"></i> <b class="text-slate-300">'+s.name+'</b> • Stärke '+fmt(s.power)+'<div class="text-rose-400">Benötigt: '+TECHS.find(t=>t.id===s.req).name+' (Klick)</div></div>').join('')}
+ }else if(YT==='def'){
+  ensureB();const defs=[['mine','Weltraummine','fa-bomb',MINE_COST,'mine_tech','Schaden '+fmt(Math.round(MINE_D*(1+tb('mdmg'))))+' • Radius '+Math.round(MINE_R*(1+tb('mrad')))+' • einmalig • Platziert: <b>'+S.mines.length+'/'+mineCap()+'</b>'],['aa','Stationäre Flak','fa-satellite-dish',AA_COST,'flak_tech','Dauerfeuer '+fmt(Math.round(AA_DPS*(1+tb('fdmg'))))+'/s • Reichweite '+Math.round(AA_R*(1+tb('frng')))+' • max. '+aaSlots()+' je Planet • Platziert: <b>'+S.aa.length+'</b>']];
+  h+='<div class="grid sm:grid-cols-2 gap-2">'+defs.map(d=>{const k=d[0],ok=(S.lv[d[4]]||0)>0,c=shipCost({cost:d[3]});
+   return card('<div class="flex items-center gap-2 mb-1"><i class="fa-solid '+d[2]+' text-amber-400"></i><b class="font-orbitron text-white">'+d[1]+'</b></div><div class="text-slate-400 text-[12px]">'+d[5]+'</div><div class="my-1 text-[11px]">'+costHtml(c)+'</div><div class="text-slate-300 mb-1">Im Vorrat: <b class="text-amber-300">'+S.stock[k]+'</b></div>'
+   +(ok?'<div class="flex gap-1 flex-wrap">'+btn('Bauen ×1',"buildDef('"+k+"',1)")+btn('×5',"buildDef('"+k+"',5)")+btn(k==='mine'?'Mit Flotte legen':'Platzieren',"armBuild('"+k+"')",'amber',!S.stock[k])+'</div>':'<div class="text-rose-400 cursor-pointer" onclick="gotoTechFromYard(\''+d[4]+'\')"><i class="fa-solid fa-lock"></i> Benötigt: '+TECHS.find(t=>t.id===d[4]).name+' (Klick)</div>'),ok?'':'opacity-70')}).join('')+'</div>';
+  h+=xShieldHtml();
+ }else h+=xRkYard();
+ setBody(h)};
+})();
 </script>
 </body>
 
