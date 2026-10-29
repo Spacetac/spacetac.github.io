@@ -498,7 +498,13 @@ function mods(o){if(o===0)return{atk:tb('atk'),arm:tb('arm'),bomb:tb('bomb'),pde
  if(o>0){const t=AIS[o-1].tech,a=t*.03;return{atk:a,arm:a,bomb:0,pdef:a*.7,rep:.1,tdis:0,spd:t*.02}}
  return{atk:0,arm:0,bomb:0,pdef:0,rep:0,tdis:0,spd:0}}
 const fleetPower=f=>basePower(f.ships);
-function fleetSpeed(f){let m=1e9;for(const t in f.ships)if(f.ships[t]>0)m=Math.min(m,SHIP[t].spd);if(m>=1e9)m=60;return m*SPDX*(1+mods(f.owner).spd)*(f.retreat?1.25+tb('retr'):1)}
+/* Heimvorteil: im eigenen Gebiet (Zelle eines eigenen Planeten) +12% Tempo; neutrale und fremde Gebiete normal */
+const ZONE_SPD=1.12;
+function zoneOwnerAt(x,y){const cx=cellX(x),cy=cellY(y);let q=null,bd=1e18;
+ for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const xx=cx+dx,yy=cy+dy;if(xx<0||yy<0||xx>=N||yy>=N)continue;const p=planets[yy*N+xx],d=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);if(d<bd){bd=d;q=p}}
+ return q?q.owner:-1}
+function zoneSpd(f){const t=performance.now();if(!(f._zt>t-250))f._zt=t,f._zm=zoneOwnerAt(f.x,f.y)===f.owner?ZONE_SPD:1;return f._zm}
+function fleetSpeed(f){let m=1e9;for(const t in f.ships)if(f.ships[t]>0)m=Math.min(m,SHIP[t].spd);if(m>=1e9)m=60;return m*SPDX*zoneSpd(f)*(1+mods(f.owner).spd)*(f.retreat?1.25+tb('retr'):1)}
 const powerCap=()=>S.dev?1e9:60+bsum('power')*35*(1+tb('pwr'));
 function powerUsed(){let u=0;for(const t in S.hangar)u+=SHIP[t].pw*S.hangar[t];for(const f of fleets)if(f.owner===0)for(const t in f.ships)u+=SHIP[t].pw*f.ships[t];return u}
 const unlocked=s=>!s.req||(S.lv[s.req]||0)>0;
@@ -2302,7 +2308,7 @@ if(typeof RENDER!=='undefined'&&RENDER.help){const _h=RENDER.help;RENDER.help=fu
 <script>
 /* ===== v3.9.1: Superschiff-Wracks – zerstörte Superschiffe können repariert werden ===== */
 (function(){
-const WC={R:{steel:9000,crystals:3000,diamonds:150},E:{steel:16000,crystals:6000,diamonds:350},L:{steel:28000,crystals:11000,diamonds:800},M:{steel:40000,crystals:20000,diamonds:2000,credits:80000}};
+const WC={R:{steel:6000,crystals:2000,diamonds:100},E:{steel:10000,crystals:4000,diamonds:220},L:{steel:18000,crystals:7000,diamonds:500},M:{steel:25000,crystals:12000,diamonds:1200,credits:50000}};
 const gsnap=d=>{const o={};for(const t in d)if(d[t]>0&&SHIP[t]&&SHIP[t].g)o[t]=d[t];return o};
 let _wt=-1e9;
 function addW(id,n){if(!(n>0))return;S.wrecks=S.wrecks||{};S.wrecks[id]=(S.wrecks[id]||0)+n;
